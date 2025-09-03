@@ -1,0 +1,6 @@
+mrs_docker
+workspace
+git
+neural_networks/train_lstm_minmax_cv.py
+data/*/
+trajectories/generated_trajectories
