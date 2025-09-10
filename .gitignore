@@ -1,6 +1,10 @@
-mrs_docker
-workspace
 git
+workspace
+mrs_docker
 neural_networks/train_lstm_minmax_cv.py
 data/*/
 trajectories/generated_trajectories
+notes.txt
+.bash_history
+.*/
+env
