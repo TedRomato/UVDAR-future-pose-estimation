@@ -43,7 +43,7 @@ echo "[4/8] /uav2: goto trajectory start"
 rosservice call /uav2/control_manager/goto_trajectory_start
 
 echo "       Sleeping 10 s to settle"
-sleep 10
+sleep 30
 
 echo "[5/8] Disable collision avoidance (uav2, then uav1)"
 rosservice call /uav2/control_manager/mpc_tracker/collision_avoidance "data: false"
