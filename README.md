@@ -1,14 +1,20 @@
 # UVDAR-future-pose-estimation-
-Link to data: 
-https://drive.google.com/drive/folders/1w9zaxZLLrvIT-LrW3HTRXhg3Q1Xx1Tbu?usp=sharing
 
-Structure Overview:
+MRS TOOLS:
+- start_mrs_system.sh starts docker and connects it to xwindow to enable visualisation from docker
+- mrs (in docker), sets up the system
 
-
-TOOLS:
+DATA TOOLS:
 - python3 bag_parser.py <path_to_bag> to convert rosbags to csv
 - python3 visualize_flight.py <path_to_csv> to generate graphs for a flight
-- run_data_collection.sh <dataset> <flight_number/name> (after starting two drones sim.)
+- start_simulation.sh (in docker), start two drone simulation
+- run_data_collection.sh <dataset> <flight_number/name> (in docker) runs all necessary commands and collects odom and uvdar position data of a flight trajectory, in trajectory1.txt in uav_trajectory_loader. It turns off automatically after the data is collected.
+
+ 
+ML TOOLS: 
+- python3 current_pose_estimation_nn.py <path_to_csv_folder>
+
+Structure Overview:
 
 ./data
     - flight rosbags

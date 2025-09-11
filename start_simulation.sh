@@ -1,0 +1,1 @@
+bash ./workspace/src/uvdar_core/scripts/two_drones/start.sh
