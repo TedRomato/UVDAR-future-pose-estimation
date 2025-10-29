@@ -43,6 +43,8 @@ class StopWatcher:
                 self.last_below_since = now
             # stayed below long enough?
             if now - self.last_below_since >= self.hold_time:
+                elapsed = now - self.start_wall
+                print(f"UAV stopped after {elapsed:.2f} seconds.")
                 rospy.signal_shutdown("Stopped long enough")
         else:
             self.last_below_since = None
