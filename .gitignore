@@ -9,3 +9,4 @@ notes.txt
 .*/
 env
 neural_networks/current_pose_estimation/results/
+__pycache__

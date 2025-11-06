@@ -1,0 +1,8 @@
+C:    [0.013, -0.031, 1.3248]   # Be cautious to always find new egde points when changing the observer position 
+P_tl: [3.7385, 1.691, 5.0008]
+P_br: [-4.383, -0.2746, 0.3108]
+distance_min: 6.0
+distance_max: 15.0
+min_z: 1.0
+target_radius: 0.25   # meters to consider target reached
+initial_delay: 12.0   # seconds to wait after sending UAV1 to C before moving UAV2
