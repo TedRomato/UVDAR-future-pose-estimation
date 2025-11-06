@@ -10,9 +10,10 @@ if [ ! -f "$NODE" ]; then
   exit 1
 fi
 
-echo "[1/2] Disable collision avoidance (uav2, then uav1)"
+echo "[1/2] Disable safety (uav2, then uav1)"
 rosservice call /uav2/control_manager/mpc_tracker/collision_avoidance "data: false"
 rosservice call /uav1/control_manager/mpc_tracker/collision_avoidance "data: false"
+rosservice call /uav2/control_manager/use_safety_area false
 
 
 echo "[2/2] Starting random_flight_node node with $CFG"
