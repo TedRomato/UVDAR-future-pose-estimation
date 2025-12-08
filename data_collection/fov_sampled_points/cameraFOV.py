@@ -551,9 +551,11 @@ if __name__ == "__main__":
 
 
 if __name__ == "__main__":
-    C = [0.013, -0.031, 1.3248]         # camera
-    P_tl = [3.7255, 1.7220, 3.676]      # Point visible on top left edge of FOV
-    P_br = [-4.396, -0.2436, -1.014]    # Point visible on bottom right edge of FOV
+
+    C=    [0.01440, -0.00936, 6.99956]     # Be cautious to always find new edge points when changing the observer position
+    P_tl= [6.929551453215346, 1.6919474951595046, 11.435896021849445]
+    P_br= [-8.499491678620544, -4.53700701649053, 1.3609349022754476]
+
 
     fov = PyramidFOV.from_2_edge_points(C, P_tl, P_br)
     cfg = SamplingConfig(distance_min=6.0, distance_max=15.0, min_z=1.0, ground_z=0.0)

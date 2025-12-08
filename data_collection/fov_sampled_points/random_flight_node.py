@@ -13,6 +13,11 @@ class RandomFOVGoto:
         self.uav2_goto_srv   = "/uav2/control_manager/goto"  # service
         self.initial_delay   = 10.0
         self.target_radius   = 0.1     # meters
+        
+        self.stop_speed_thr  = 0.05    # m/s, ### NEW
+        self.last_target_time = rospy.Time.now()
+        self.min_dt_between_targets = rospy.Duration(1)
+        
         self.cfg_path        = os.path.join(os.path.dirname(__file__), "fov_flight.yaml")
 
         # sampling defaults (can be overridden in YAML)
@@ -31,12 +36,10 @@ class RandomFOVGoto:
             rospy.logfatal(f"[random_fov_goto] Missing keys in cfg: {', '.join(missing)}")
             raise SystemExit(1)
 
-        C        = np.array(data["C"], float)
-        P_tl_rel = np.array(data["P_tl"], float)   # relative to C
-        P_br_rel = np.array(data["P_br"], float)   # relative to C
-        P_tl = C + P_tl_rel
-        P_br = C + P_br_rel
-
+        C    = np.array(data["C"], float)
+        P_tl = np.array(data["P_tl"], float)   # abs pos
+        P_br = np.array(data["P_br"], float)   # abs pos
+        
         dist_min      = float(data.get("distance_min", dist_min))
         dist_max      = float(data.get("distance_max", dist_max))
         min_z         = float(data.get("min_z",       min_z))
@@ -68,12 +71,16 @@ class RandomFOVGoto:
     def _goto_service(self, srv_name: str, x: float, y: float, z: float, pitch: float):
         try:
             rospy.wait_for_service(srv_name, timeout=5.0)
+
             cmd = ["rosservice", "call", srv_name, f"[{x:.6f}, {y:.6f}, {z:.6f}, {pitch:.6f}]"]
             subprocess.check_call(cmd)
         except Exception as e:
             rospy.logwarn(f"[random_fov_goto] Service call failed: {e}")
 
     def _send_random_to_uav2(self):
+        if (rospy.Time.now() - self.last_target_time) < self.min_dt_between_targets:
+            return
+
         P = self.fov.sample_point(self.samp)
         if P is None or len(P) == 0:
             rospy.logwarn("[random_fov_goto] Failed to sample target.")
@@ -81,6 +88,9 @@ class RandomFOVGoto:
         self.current_target = np.array(P, float)
         self._goto_service(self.uav2_goto_srv, P[0], P[1], P[2], 0.0)
         rospy.loginfo(f"uav2 → random: [{P[0]:.2f}, {P[1]:.2f}, {P[2]:.2f}]")
+
+        self.current_target = np.array(P, float)
+        self.last_target_time = rospy.Time.now()
 
     # --- odometry callback: trigger next target when close enough ---
     def cb_odom(self, msg: Odometry):
@@ -93,7 +103,10 @@ class RandomFOVGoto:
         dz = pos.z - self.current_target[2]
         dist = math.sqrt(dx*dx + dy*dy + dz*dz)
 
-        if dist <= self.target_radius:
+        vel = msg.twist.twist.linear
+        speed = math.sqrt(vel.x*vel.x + vel.y*vel.y + vel.z*vel.z)  # NEW
+
+        if dist <= self.target_radius or speed <= self.stop_speed_thr:
             self._send_random_to_uav2()
 
 

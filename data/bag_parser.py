@@ -47,7 +47,16 @@ def make_outdir_from_bag(bag_path):
         bag_dir = os.path.dirname(ap)
         parent  = os.path.dirname(bag_dir)
         out     = os.path.join("data", parent, "csv_data", os.path.basename(bag_dir))
+
     os.makedirs(out, exist_ok=True)
+
+    # Make sure directory is writable from the host (when created as root in Docker)
+    try:
+        os.chmod(out, 0o777)
+    except PermissionError:
+        # If we somehow don't have perms, just continue
+        pass
+
     return out
 
 def write_header(w):
@@ -100,9 +109,21 @@ def main():
 
     # Create CSVs
     try:
-        f_est = open(os.path.join(outdir, "estimations.csv"), "w", newline="")
-        f_o1  = open(os.path.join(outdir, "odom1.csv"), "w", newline="")
-        f_o2  = open(os.path.join(outdir, "odom2.csv"), "w", newline="")
+        est_path = os.path.join(outdir, "estimations.csv")
+        od1_path = os.path.join(outdir, "odom1.csv")
+        od2_path = os.path.join(outdir, "odom2.csv")
+
+        f_est = open(est_path, "w", newline="")
+        f_o1  = open(od1_path, "w", newline="")
+        f_o2  = open(od2_path, "w", newline="")
+
+        # Make files world-writable so host user can modify them
+        for path in (est_path, od1_path, od2_path):
+            try:
+                os.chmod(path, 0o666)
+            except PermissionError:
+                pass
+
     except PermissionError:
         sys.stderr.write(f"ERROR: Permission denied creating CSVs in: {outdir}\n")
         sys.exit(4)
