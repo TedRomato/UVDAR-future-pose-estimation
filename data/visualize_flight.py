@@ -38,7 +38,7 @@ def add_t_rel(dfs):
     t0 = min(t0s) if t0s else 0.0
     out = []
     for df in dfs:
-        if df is None: 
+        if df is None:
             out.append(None)
             continue
         d = df.copy()
@@ -67,41 +67,60 @@ def break_uvdar_gaps(df, gap_sec):
         if i in gaps:
             nan_row = np.array([np.nan]*len(cols), dtype='float64')
             # keep time axis monotonic with same t_rel so matplotlib breaks the line
-            # (time being NaN would also break; but keep t for readable axis)
             nan_row[list(cols).index("t_rel")] = d.iloc[i]["t_rel"]
             rows.append(nan_row)
     d2 = pd.DataFrame(rows, columns=cols)
     return d2
 
-def plot_param(run_dir, param, ylabel, colors, est, od1, od2):
-    plt.figure(figsize=(10,5))
+def plot_param(param, ylabel, colors, est, od1, od2):
+    """
+    Plot a single parameter (e.g. x, y, z, yaw_deg, ...) from
+    est (UVDAR), odom1, and odom2 as a live figure.
+
+    No saving to disk, only interactive visualization.
+    """
+    plt.figure(figsize=(10, 5))
     have_any = False
+
     if est is not None:
-        plt.plot(est["t_rel"], est[param], color=colors["uvdar"], label="uvdar", linewidth=1.6)
+        plt.plot(
+            est["t_rel"], est[param],
+            color=colors["uvdar"], label="uvdar", linewidth=1.6
+        )
         have_any = True
     if od1 is not None:
-        plt.plot(od1["t_rel"], od1[param], color=colors["odom1"], label="odom1", linewidth=1.2)
+        plt.plot(
+            od1["t_rel"], od1[param],
+            color=colors["odom1"], label="odom1", linewidth=1.2
+        )
         have_any = True
     if od2 is not None:
-        plt.plot(od2["t_rel"], od2[param], color=colors["odom2"], label="odom2", linewidth=1.2)
+        plt.plot(
+            od2["t_rel"], od2[param],
+            color=colors["odom2"], label="odom2", linewidth=1.2
+        )
         have_any = True
+
     if not have_any:
         plt.close()
         print(f"[skip] {param}: no data")
         return
+
     plt.xlabel("Time [s]")
     plt.ylabel(ylabel)
-    # ultra-simple legend: just color = source
     plt.legend(title="", loc="best")
     plt.grid(True)
     plt.tight_layout()
-    out = os.path.join(run_dir, f"param_{param}.png")
-    plt.savefig(out, dpi=150)
-    print(f"[saved] {out}")
+    print(f"[plot] {param}: live figure created")
 
 def main():
-    ap = argparse.ArgumentParser(description="Plot per-parameter graphs with UV-DAR + odom1 + odom2 (no interpolation for UV-DAR).")
-    ap.add_argument("run_dir", help="Folder with estimations.csv / odom1.csv / odom2.csv (e.g., helix/csv_data/1)")
+    ap = argparse.ArgumentParser(
+        description="Plot per-parameter graphs with UV-DAR + odom1 + odom2 (no interpolation for UV-DAR)."
+    )
+    ap.add_argument(
+        "run_dir",
+        help="Folder with estimations.csv / odom1.csv / odom2.csv (e.g., helix/csv_data/1)",
+    )
     args = ap.parse_args()
 
     run_dir = os.path.abspath(args.run_dir)
@@ -126,16 +145,16 @@ def main():
     colors = {"uvdar": "tab:orange", "odom1": "tab:blue", "odom2": "tab:green"}
 
     # Positions
-    plot_param(run_dir, "x", "X [m]", colors, est, od1, od2)
-    plot_param(run_dir, "y", "Y [m]", colors, est, od1, od2)
-    plot_param(run_dir, "z", "Z [m]", colors, est, od1, od2)
+    plot_param("x", "X [m]", colors, est, od1, od2)
+    plot_param("y", "Y [m]", colors, est, od1, od2)
+    plot_param("z", "Z [m]", colors, est, od1, od2)
 
     # Attitudes (degrees)
-    plot_param(run_dir, "yaw_deg",   "Yaw [deg]",   colors, est, od1, od2)
-    plot_param(run_dir, "pitch_deg", "Pitch [deg]", colors, est, od1, od2)
-    plot_param(run_dir, "roll_deg",  "Roll [deg]",  colors, est, od1, od2)
+    plot_param("yaw_deg",   "Yaw [deg]",   colors, est, od1, od2)
+    plot_param("pitch_deg", "Pitch [deg]", colors, est, od1, od2)
+    plot_param("roll_deg",  "Roll [deg]",  colors, est, od1, od2)
 
-    # Optional interactive show
+    # Show all figures interactively (blocking until closed)
     plt.show()
 
 if __name__ == "__main__":
