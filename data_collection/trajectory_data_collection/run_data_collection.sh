@@ -9,7 +9,7 @@ fi
 DATASET="$1"
 FLIGHT="$2"
 
-BAG_DIR="$HOME/data/$DATASET/bags/$FLIGHT"
+BAG_DIR="$HOME/data/$DATASET/bags"
 mkdir -p "$BAG_DIR"
 
 
@@ -52,8 +52,8 @@ rosservice call /uav1/control_manager/mpc_tracker/collision_avoidance "data: fal
 echo "[6/8] /uav2: start trajectory tracking"
 rosservice call /uav2/control_manager/start_trajectory_tracking
 
-echo "[7/8] Start rosbag record -> $BAG_DIR/flight.bag"
-rosbag record -O "$BAG_DIR/flight.bag" \
+echo "[7/8] Start rosbag record -> $BAG_DIR/$FLIGHT.bag"
+rosbag record -O "$BAG_DIR/$FLIGHT.bag" \
   /uav2/estimation_manager/odom_main \
   /uav1/estimation_manager/odom_main \
   /uav1/uvdar/measuredPoses &
@@ -75,4 +75,4 @@ if ps -p $BAG_PID >/dev/null 2>&1; then
   wait $BAG_PID || true
 fi
 
-echo "Flight complete. Bag saved at: $BAG_DIR/flight.bag"
+echo "Flight complete. Bag saved at: $BAG_DIR/$FLIGHT.bag"

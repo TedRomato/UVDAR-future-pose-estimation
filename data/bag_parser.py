@@ -33,20 +33,18 @@ def rpy_to_sin_cos(roll, pitch, yaw):
 
 def make_outdir_from_bag(bag_path):
     """
-    helix/bags/1/run.bag -> data/helix/csv_data/1/
-    Fallback: data/<parent_of_bag_dir>/csv_data/<bag_dir_name>/
+    Determine the CSV output directory from a bag path.
+
+    Bags are expected to sit directly inside a ``bags/`` folder.
+    Output goes to a sibling ``csv_data/`` directory.
+
+    Example:
+        data/bags/flight_2026_02_06__16_21.bag  ->  data/csv_data/
     """
     ap = os.path.abspath(bag_path)
-    parts = ap.split(os.sep)
-    if "bags" in parts:
-        i = parts.index("bags")
-        base = os.path.join("data", os.sep.join(parts[:i]))      # e.g. data/helix
-        sub  = os.path.join(*parts[i+1:-1]) if len(parts[i+1:-1]) else ""
-        out  = os.path.join(base, "csv_data", sub)               # e.g. data/helix/csv_data/1
-    else:
-        bag_dir = os.path.dirname(ap)
-        parent  = os.path.dirname(bag_dir)
-        out     = os.path.join("data", parent, "csv_data", os.path.basename(bag_dir))
+    bag_dir = os.path.dirname(ap)
+    parent = os.path.dirname(bag_dir)
+    out = os.path.join(parent, "csv_data")
 
     os.makedirs(out, exist_ok=True)
 

@@ -1,6 +1,6 @@
-C:    [0.01440, -0.00936, 11.99956]     # Be cautious to always find new edge points when changing the observer position
-P_tl: [6.929551453215346, 1.6919474951595046, 15.0]
-P_br: [-8.499491678620544, -4.53700701649053, 6.3609349022754476]
+C:    [-4.04, -3.71, 11.12]     # Be cautious to always find new edge points when changing the observer position
+P_tl: [9.10, -4.33, 16.93]
+P_br: [-15.42, -7.34, 4.11]
 distance_min: 6.0
 distance_max: 15.0
 min_z: 5.0

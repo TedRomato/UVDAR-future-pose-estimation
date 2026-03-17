@@ -551,15 +551,14 @@ if __name__ == "__main__":
 
 
 if __name__ == "__main__":
-
-    C=    [0.01440, -0.00936, 6.99956]     # Be cautious to always find new edge points when changing the observer position
-    P_tl= [6.929551453215346, 1.6919474951595046, 11.435896021849445]
-    P_br= [-8.499491678620544, -4.53700701649053, 1.3609349022754476]
+    C=  [-4.04, -3.71, 11.12]     # Be cautious to always find new edge points when changing the observer position
+    P_tl= [9.10, -4.33, 18.93]
+    P_br= [-15.42, -7.34, 4.11]
 
 
     fov = PyramidFOV.from_2_edge_points(C, P_tl, P_br)
     cfg = SamplingConfig(distance_min=6.0, distance_max=15.0, min_z=1.0, ground_z=0.0)
-    pts = fov.sample_points(800, cfg)
+    pts = fov.sample_points(200, cfg)
 
     input_points = np.vstack([P_tl, P_br])
     fov.visualize(pts, cfg, extra_points=input_points, extra_label="Input edge points")

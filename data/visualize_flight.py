@@ -1,161 +1,327 @@
 #!/usr/bin/env python3
+"""
+Visualization helpers for UVDAR flight data.
+
+Can be used standalone (``python3 visualize_flight.py <csv_dir>``) or as an
+importable module — ``bag_parser_multi`` imports ``plot_all`` from here.
+"""
 import argparse
 import os
 import math
-import pandas as pd
+import time as _time
 import numpy as np
 import matplotlib.pyplot as plt
+from types import SimpleNamespace
 
-# Break UV-DAR line if time gap exceeds this (seconds)
-UVDAR_GAP_SEC = 0.25  # adjust if you want stricter/looser breaking
 
-NEEDED = [
-    "time","x","y","z",
-    "roll_sin","roll_cos","pitch_sin","pitch_cos","yaw_sin","yaw_cos"
-]
+# == PoseData-based plotting (used by bag_parser_multi) ========================
 
-def load_one(path):
-    """Load one CSV; returns DataFrame with: time,t_rel,x,y,z,yaw_deg,pitch_deg,roll_deg."""
-    if not os.path.exists(path):
-        return None
-    df = pd.read_csv(path)
-    missing = [c for c in NEEDED if c not in df.columns]
-    if missing:
-        raise ValueError(f"{os.path.basename(path)} missing columns: {missing}")
+def _downsample(data, max_points=15000):
+    """Uniformly-strided subset with at most max_points entries."""
+    if len(data) <= max_points:
+        return data
+    return data[::len(data) // max_points]
 
-    # reconstruct angles (radians) then degrees
-    df["yaw"]   = [math.atan2(s, c) for s, c in zip(df["yaw_sin"],   df["yaw_cos"])]
-    df["pitch"] = [math.atan2(s, c) for s, c in zip(df["pitch_sin"], df["pitch_cos"])]
-    df["roll"]  = [math.atan2(s, c) for s, c in zip(df["roll_sin"],  df["roll_cos"])]
-    df["yaw_deg"]   = df["yaw"]   * 180.0 / math.pi
-    df["pitch_deg"] = df["pitch"] * 180.0 / math.pi
-    df["roll_deg"]  = df["roll"]  * 180.0 / math.pi
-    return df[["time","x","y","z","yaw_deg","pitch_deg","roll_deg"]].copy()
 
-def add_t_rel(dfs):
-    """Align to common t0; add t_rel column."""
-    t0s = [df["time"].iloc[0] for df in dfs if df is not None and len(df) > 0]
-    t0 = min(t0s) if t0s else 0.0
-    out = []
-    for df in dfs:
-        if df is None:
-            out.append(None)
+def _plot_axis(ax, poses, field, label, color):
+    if not poses:
+        return
+    ax.plot([p.time for p in poses],
+            [getattr(p, field) for p in poses],
+            label=label, color=color, linewidth=0.8)
+
+
+def _plot_with_gaps(ax, poses, field, label, color, max_gap=5.0):
+    """Plot data, inserting NaN breaks at time gaps > max_gap seconds."""
+    if not poses:
+        return
+    times, values = [], []
+    for i, p in enumerate(poses):
+        if i > 0 and p.time - poses[i - 1].time > max_gap:
+            times.append(float('nan'))
+            values.append(float('nan'))
+        times.append(p.time)
+        values.append(getattr(p, field))
+    ax.plot(times, values, label=label, color=color, linewidth=0.8)
+
+
+def compute_speed(poses, bin_size: int = 20):
+    """Compute speed magnitude (m/s) from a list of PoseData.
+
+    Consecutive samples are first differentiated to get per-step speeds,
+    then averaged in non-overlapping bins of ``bin_size`` to produce one
+    output sample per bin.  The output timestamp is the mean time of the bin.
+
+    Returns (times, speeds) lists (length ≈ len(poses) / bin_size).
+    """
+    if len(poses) < 2:
+        return [], []
+
+    # Per-step instantaneous speeds
+    raw_times, raw_speeds = [], []
+    for i in range(1, len(poses)):
+        dt = poses[i].time - poses[i - 1].time
+        if dt <= 0:
             continue
-        d = df.copy()
-        d["t_rel"] = d["time"].astype(float) - float(t0)
-        out.append(d)
-    return out
+        dx = poses[i].x - poses[i - 1].x
+        dy = poses[i].y - poses[i - 1].y
+        dz = poses[i].z - poses[i - 1].z
+        raw_speeds.append(math.sqrt(dx * dx + dy * dy + dz * dz) / dt)
+        raw_times.append((poses[i].time + poses[i - 1].time) * 0.5)
 
-def break_uvdar_gaps(df, gap_sec):
+    # Bin-average
+    times, speeds = [], []
+    for start in range(0, len(raw_speeds) - bin_size + 1, bin_size):
+        chunk_s = raw_speeds[start:start + bin_size]
+        chunk_t = raw_times[start:start + bin_size]
+        speeds.append(sum(chunk_s) / len(chunk_s))
+        times.append(sum(chunk_t) / len(chunk_t))
+    return times, speeds
+
+
+def compute_inter_uav_distance(od1, od2):
+    """Compute Euclidean distance between uav1 and uav2 over time.
+
+    Uses nearest-neighbour interpolation: for each odom2 timestamp,
+    pick the closest odom1 sample.
+
+    Returns (times, distances) lists.
     """
-    Insert NaNs after large time gaps to create visible breaks in the line
-    (no interpolation). Works in-place-like: returns a new DataFrame with same columns.
+    if not od1 or not od2:
+        return [], []
+    times1 = np.array([p.time for p in od1])
+    x1 = np.array([p.x for p in od1])
+    y1 = np.array([p.y for p in od1])
+    z1 = np.array([p.z for p in od1])
+
+    times, dists = [], []
+    for p2 in od2:
+        idx = np.argmin(np.abs(times1 - p2.time))
+        dx = p2.x - x1[idx]
+        dy = p2.y - y1[idx]
+        dz = p2.z - z1[idx]
+        times.append(p2.time)
+        dists.append(math.sqrt(dx * dx + dy * dy + dz * dz))
+    return times, dists
+
+
+def _filter_time_window(poses, t_start, t_end):
+    """Return only poses with t_start <= time < t_end."""
+    return [p for p in poses if t_start <= p.time < t_end]
+
+
+def plot_all(pred_rel, true_rel, od1, od2, est=None, join_times=None,
+             title="Relative Pose & Odom", start_time=0.0, duration=3600.0):
+    """Render 5-panel plot: x, y, z, inter-UAV distance, speed.
+
+    All inputs are lists of PoseData objects.
+    *start_time* and *duration* (seconds) control the visible time window.
     """
-    if df is None or len(df) == 0:
-        return df
-    d = df.copy()
-    t = d["t_rel"].to_numpy()
-    # indices where gap exceeds threshold
-    gaps = np.where(np.diff(t) > gap_sec)[0]
-    if gaps.size == 0:
-        return d
-    # Build a new dataframe with NaN rows inserted after each gap index
-    rows = []
-    cols = d.columns
-    for i in range(len(d)):
-        rows.append(d.iloc[i].values)
-        if i in gaps:
-            nan_row = np.array([np.nan]*len(cols), dtype='float64')
-            # keep time axis monotonic with same t_rel so matplotlib breaks the line
-            nan_row[list(cols).index("t_rel")] = d.iloc[i]["t_rel"]
-            rows.append(nan_row)
-    d2 = pd.DataFrame(rows, columns=cols)
-    return d2
+    if not (pred_rel or true_rel or od1 or od2):
+        print("No data to plot.")
+        return
+    est = est or []
+    join_times = join_times or []
 
-def plot_param(param, ylabel, colors, est, od1, od2):
-    """
-    Plot a single parameter (e.g. x, y, z, yaw_deg, ...) from
-    est (UVDAR), odom1, and odom2 as a live figure.
+    # Apply time window
+    t_end = start_time + duration
+    od1 = _filter_time_window(od1, start_time, t_end)
+    od2 = _filter_time_window(od2, start_time, t_end)
+    est = _filter_time_window(est, start_time, t_end)
+    pred_rel = _filter_time_window(pred_rel, start_time, t_end)
+    true_rel = _filter_time_window(true_rel, start_time, t_end)
+    join_times = [jt for jt in join_times if start_time <= jt < t_end]
 
-    No saving to disk, only interactive visualization.
-    """
-    plt.figure(figsize=(10, 5))
-    have_any = False
-
-    if est is not None:
-        plt.plot(
-            est["t_rel"], est[param],
-            color=colors["uvdar"], label="uvdar", linewidth=1.6
-        )
-        have_any = True
-    if od1 is not None:
-        plt.plot(
-            od1["t_rel"], od1[param],
-            color=colors["odom1"], label="odom1", linewidth=1.2
-        )
-        have_any = True
-    if od2 is not None:
-        plt.plot(
-            od2["t_rel"], od2[param],
-            color=colors["odom2"], label="odom2", linewidth=1.2
-        )
-        have_any = True
-
-    if not have_any:
-        plt.close()
-        print(f"[skip] {param}: no data")
+    if not (pred_rel or true_rel or od1 or od2):
+        print(f"No data in window [{start_time:.0f}s .. {t_end:.0f}s].")
         return
 
-    plt.xlabel("Time [s]")
-    plt.ylabel(ylabel)
-    plt.legend(title="", loc="best")
-    plt.grid(True)
-    plt.tight_layout()
-    print(f"[plot] {param}: live figure created")
+    print(f"Plotting window [{start_time:.0f}s .. {t_end:.0f}s] "
+          f"(od1={len(od1)} od2={len(od2)} est={len(est)} "
+          f"pred={len(pred_rel)} true={len(true_rel)})")
+
+    _t0 = _time.monotonic()
+
+    # Downsample for plotting performance
+    od1_ds, od2_ds = _downsample(od1), _downsample(od2)
+    pred_rel_ds, true_rel_ds = _downsample(pred_rel), _downsample(true_rel)
+    est_ds = _downsample(est)
+    print(f"  Downsampled in {_time.monotonic() - _t0:.2f}s "
+          f"(od1={len(od1_ds)} od2={len(od2_ds)} est={len(est_ds)} "
+          f"pred={len(pred_rel_ds)} true={len(true_rel_ds)})")
+
+    _t1 = _time.monotonic()
+    speed_t, speed_v = compute_speed(od2)
+    print(f"  Computed speed ({len(speed_t)} pts) in {_time.monotonic() - _t1:.2f}s")
+
+    _t1 = _time.monotonic()
+    dist_t, dist_v = compute_inter_uav_distance(od1_ds, od2_ds)
+    print(f"  Computed inter-UAV distance ({len(dist_t)} pts) in {_time.monotonic() - _t1:.2f}s")
+
+    _t1 = _time.monotonic()
+    fig, axes = plt.subplots(5, 1, figsize=(14, 16), sharex=True)
+
+    # Panels 1-3: x, y, z
+    for i, (field, ylabel) in enumerate(zip("xyz", ["X [m]", "Y [m]", "Z [m]"])):
+        _plot_axis(axes[i], od1_ds, field, "odom1", "tab:blue")
+        _plot_axis(axes[i], od2_ds, field, "odom2", "tab:orange")
+        _plot_with_gaps(axes[i], est_ds, field, "raw prediction (local)", "tab:green")
+        _plot_axis(axes[i], true_rel_ds, field, "odom2 rel to fcu", "tab:cyan")
+        _plot_with_gaps(axes[i], pred_rel_ds, field, "pred rel to fcu", "tab:red")
+        axes[i].set_ylabel(ylabel)
+        axes[i].legend(loc="best", fontsize="small")
+        axes[i].grid(True, alpha=0.3)
+    print(f"  Plotted xyz panels in {_time.monotonic() - _t1:.2f}s")
+
+    _t1 = _time.monotonic()
+    # Panel 4: inter-UAV distance
+    if dist_t:
+        dt, dv = _downsample(dist_t), _downsample(dist_v)
+        axes[3].plot(dt, dv, color="tab:purple", linewidth=0.8, label="uav1<->uav2 dist")
+    axes[3].set_ylabel("Distance [m]")
+    axes[3].legend(loc="best")
+    axes[3].grid(True, alpha=0.3)
+
+    # Panel 5: UAV2 speed
+    if speed_t:
+        st, sv = _downsample(speed_t), _downsample(speed_v)
+        axes[4].plot(st, sv, color="tab:orange", linewidth=0.8, label="uav2 speed")
+    axes[4].set_ylabel("Speed [m/s]")
+    axes[4].set_xlabel("Time [s]")
+    axes[4].legend(loc="best")
+    axes[4].grid(True, alpha=0.3)
+    print(f"  Plotted distance & speed panels in {_time.monotonic() - _t1:.2f}s")
+
+    _t1 = _time.monotonic()
+    # Bag join markers
+    for i, jt in enumerate(join_times):
+        for ax in axes:
+            ax.axvline(jt, color="k", linestyle="--", linewidth=1.0, alpha=0.7,
+                       label="bag join" if i == 0 and ax is axes[0] else None)
+    if join_times:
+        axes[0].legend(loc="best", fontsize="small")
+
+    fig.suptitle(title)
+    fig.tight_layout()
+    print(f"  Layout done in {_time.monotonic() - _t1:.2f}s")
+    print(f"  Total plot_all: {_time.monotonic() - _t0:.2f}s — showing window...")
+    plt.show()
+
+
+# == CSV → PoseData conversion (standalone mode) ==============================
+
+NEEDED_COLS = ["time", "x", "y", "z",
+               "roll_sin", "roll_cos", "pitch_sin", "pitch_cos",
+               "yaw_sin", "yaw_cos"]
+
+
+def _load_pose_list(csv_path):
+    """Read a pose CSV into a list of lightweight PoseData-like objects.
+
+    Returns [] if the file doesn't exist or is empty.
+    """
+    if not os.path.exists(csv_path):
+        return []
+    import csv
+    poses = []
+    with open(csv_path, newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                poses.append(SimpleNamespace(
+                    time=float(row["time"]),
+                    x=float(row["x"]),
+                    y=float(row["y"]),
+                    z=float(row["z"]),
+                    roll_sin=float(row["roll_sin"]),
+                    roll_cos=float(row["roll_cos"]),
+                    pitch_sin=float(row["pitch_sin"]),
+                    pitch_cos=float(row["pitch_cos"]),
+                    yaw_sin=float(row["yaw_sin"]),
+                    yaw_cos=float(row["yaw_cos"]),
+                ))
+            except (KeyError, ValueError):
+                continue
+    return poses
+
+
+def _load_join_times(run_dir):
+    """Read bag-boundary join times from used_rosbags.txt (if present)."""
+    txt_path = os.path.join(run_dir, "used_rosbags.txt")
+    if not os.path.exists(txt_path):
+        return []
+    with open(txt_path) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("Join times:"):
+                payload = line[len("Join times:"):].strip()
+                if not payload:
+                    return []
+                return [float(v) for v in payload.split(",")]
+    return []
+
+
+# == Main ======================================================================
+
+def _parse_hhmm(text):
+    """Parse 'HH:MM' string to seconds offset."""
+    parts = text.strip().split(":")
+    if len(parts) != 2:
+        raise ValueError(f"Expected HH:MM, got '{text}'")
+    return int(parts[0]) * 3600 + int(parts[1]) * 60
+
 
 def main():
     ap = argparse.ArgumentParser(
-        description="Plot per-parameter graphs with UV-DAR + odom1 + odom2 (no interpolation for UV-DAR)."
+        description="Visualise flight CSV data (identical 5-panel plot to bag_parser_multi)."
     )
     ap.add_argument(
         "run_dir",
-        help="Folder with estimations.csv / odom1.csv / odom2.csv (e.g., helix/csv_data/1)",
+        help="Folder containing CSV files (odom1.csv, odom2.csv, estimations.csv, "
+             "predicted_relative_pose.csv, true_relative_pose.csv).",
+    )
+    ap.add_argument(
+        "--start", default="0:00", metavar="HH:MM",
+        help="Start time offset into the data (default: 0:00).",
+    )
+    ap.add_argument(
+        "--duration", type=float, default=3600.0, metavar="SEC",
+        help="Duration of the window in seconds (default: 3600 = 1 hour).",
     )
     args = ap.parse_args()
 
     run_dir = os.path.abspath(args.run_dir)
-    est_path = os.path.join(run_dir, "estimations.csv")  # UV-DAR
-    od1_path = os.path.join(run_dir, "odom1.csv")
-    od2_path = os.path.join(run_dir, "odom2.csv")
+    start_sec = _parse_hhmm(args.start)
 
-    est = load_one(est_path) if os.path.exists(est_path) else None
-    od1 = load_one(od1_path) if os.path.exists(od1_path) else None
-    od2 = load_one(od2_path) if os.path.exists(od2_path) else None
+    print(f"Loading CSVs from {run_dir} ...")
 
-    if est is None and od1 is None and od2 is None:
-        print("[error] No CSVs found to plot.")
-        return
+    print("  Loading odom1.csv ...")
+    od1 = _load_pose_list(os.path.join(run_dir, "odom1.csv"))
+    print(f"  Loading odom2.csv ...")
+    od2 = _load_pose_list(os.path.join(run_dir, "odom2.csv"))
+    print(f"  Loading estimations.csv ...")
+    est = _load_pose_list(os.path.join(run_dir, "estimations.csv"))
+    print(f"  Loading predicted_relative_pose.csv ...")
+    pred_rel = _load_pose_list(os.path.join(run_dir, "predicted_relative_pose.csv"))
+    print(f"  Loading true_relative_pose.csv ...")
+    true_rel = _load_pose_list(os.path.join(run_dir, "true_relative_pose.csv"))
 
-    # Align times, then break uvdar gaps
-    est, od1, od2 = add_t_rel([est, od1, od2])
-    if est is not None:
-        est = break_uvdar_gaps(est, UVDAR_GAP_SEC)
+    print(f"Done. odom1={len(od1)}  odom2={len(od2)}  est={len(est)}  "
+          f"pred_rel={len(pred_rel)}  true_rel={len(true_rel)}")
 
-    # Fixed, simple colors (feel free to change)
-    colors = {"uvdar": "tab:orange", "odom1": "tab:blue", "odom2": "tab:green"}
+    if od2:
+        total_dur = od2[-1].time - od2[0].time
+        print(f"Total duration: {total_dur:.0f}s ({total_dur/3600:.2f}h)")
 
-    # Positions
-    plot_param("x", "X [m]", colors, est, od1, od2)
-    plot_param("y", "Y [m]", colors, est, od1, od2)
-    plot_param("z", "Z [m]", colors, est, od1, od2)
+    join_times = _load_join_times(run_dir)
+    if join_times:
+        print(f"Loaded {len(join_times)} bag join times from used_rosbags.txt")
 
-    # Attitudes (degrees)
-    plot_param("yaw_deg",   "Yaw [deg]",   colors, est, od1, od2)
-    plot_param("pitch_deg", "Pitch [deg]", colors, est, od1, od2)
-    plot_param("roll_deg",  "Roll [deg]",  colors, est, od1, od2)
+    plot_all(pred_rel, true_rel, od1, od2, est=est,
+             join_times=join_times,
+             title=os.path.basename(run_dir),
+             start_time=float(start_sec), duration=args.duration)
 
-    # Show all figures interactively (blocking until closed)
-    plt.show()
 
 if __name__ == "__main__":
     main()
