@@ -1,8 +1,11 @@
 # Learning rate for the optimizer (float)
 learning_rate: 0.001
 
+# Random seed for reproducibility
+seed: 42
+
 # Number of epochs to train for (int)
-epochs: 20
+epochs: 100
 
 # Sizes of the hidden layers (list of ints)
 layers:
@@ -16,6 +19,9 @@ batch_size: 0
 
 # Fraction of data used for validation (0.0–1.0)
 val_split: 0.2
+
+# Gap (in samples) between train and val splits to reduce correlation
+val_padding: 0
 
 # L2 regularization strength applied in the optimizer
 weight_decay: 0.0001

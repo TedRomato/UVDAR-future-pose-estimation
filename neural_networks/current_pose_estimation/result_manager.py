@@ -10,15 +10,17 @@ import yaml
 import helpers
 
 
-def save_results(name: str, cfg, artifacts, run_dir: str):
+def save_results(name: str, cfg, artifacts, run_dir: str,
+                 results_subdir: str = None, model_type: str = "3d"):
     """
     Create results dir (with val in name), save model, stats, and ONLY the
     learning-curve image (train/val MSE). Also store which dataset (run_dir)
-    was used for training.
+    was used for training, and a model_info.json so the model can be
+    reconstructed from saved weights.
     """
     final_val_loss = artifacts["final_val_loss"]
     val_str = f"{final_val_loss:.6f}"
-    results_dir = helpers.ensure_fresh_results_dir(f"{name}_val{val_str}")
+    results_dir = helpers.ensure_fresh_results_dir(f"{name}_val{val_str}", subdir=results_subdir)
     print(f"Creating final results directory: {results_dir}")
 
     # Augment config with dataset path for traceability (optional but handy)
@@ -48,6 +50,21 @@ def save_results(name: str, cfg, artifacts, run_dir: str):
     norm_stats_json = {k: v.tolist() for k, v in artifacts["norm_stats"].items()}
     with open(os.path.join(results_dir, "normalization.json"), "w") as f:
         json.dump(norm_stats_json, f, indent=2)
+
+    # Save model reconstruction info (type + dimensions)
+    # in_dim / out_dim are inferred from the first & last Linear layers.
+    state = artifacts["model"].state_dict()
+    first_weight = next(v for k, v in state.items() if k.endswith(".weight"))
+    last_weight  = list(v for k, v in state.items() if k.endswith(".weight"))[-1]
+    model_info = {
+        "model_type": model_type,
+        "in_dim":     int(first_weight.shape[1]),
+        "out_dim":    int(last_weight.shape[0]),
+    }
+    model_info_path = os.path.join(results_dir, "model_info.json")
+    with open(model_info_path, "w") as f:
+        json.dump(model_info, f, indent=2)
+    print(f"Model info saved to: {model_info_path}")
 
     # --- Only: learning curves (train/val MSE in normalized space) ---
     train_losses = artifacts["train_losses"]

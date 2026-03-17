@@ -2,6 +2,7 @@
 import os
 import argparse
 import multiprocessing as mp
+from datetime import datetime
 
 # --------------------------------------------------------------------
 # LIMIT THREADS (helps prevent freezing with many processes)
@@ -10,6 +11,7 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
+from aim import Run
 from main import train_model
 
 
@@ -17,34 +19,50 @@ from main import train_model
 # CONFIG SWEEP DEFINITIONS (unchanged)
 # --------------------------------------------------------------------
 BASE_CFG = {
-    "epochs": 200,
-    "val_split": 0.2,
+    "epochs": 25,
+    "val_split": 0.7,
+    "val_padding": 20,
     "weight_decay": 1e-4,
     "activation": "relu",
     "optimizer": "adamw",
+    "seed": 42,
 }
 
+CONFIGS = []    
+
 CONFIGS = [
-    {**BASE_CFG, "learning_rate": 1e-3, "layers": [256, 128], "batch_size": 0},
-    {**BASE_CFG, "learning_rate": 3e-4, "layers": [256, 128, 64], "batch_size": 256},
-    {**BASE_CFG, "learning_rate": 1e-4, "layers": [256], "batch_size": 512},
-    {**BASE_CFG, "learning_rate": 3e-4, "layers": [256, 256], "batch_size": 0},
-
-    {**BASE_CFG, "learning_rate": 1e-3, "layers": [128, 128], "batch_size": 256},
-    {**BASE_CFG, "learning_rate": 5e-4, "layers": [512, 256], "batch_size": 512},
-    {**BASE_CFG, "learning_rate": 1e-4, "layers": [128, 64], "batch_size": 0},
-
-    {**BASE_CFG, "learning_rate": 3e-4, "layers": [256, 256, 128], "batch_size": 256, "activation": "gelu"},
-    {**BASE_CFG, "learning_rate": 1e-3, "layers": [256, 256, 256], "batch_size": 512, "activation": "gelu"},
-
-    {**BASE_CFG, "learning_rate": 5e-4, "layers": [256, 128, 64], "batch_size": 128, "optimizer": "adam"},
-
-    {**BASE_CFG, "learning_rate": 3e-4, "layers": [512, 256, 128], "batch_size": 256,
-     "optimizer": "adam", "weight_decay": 3e-4},
-
-    {**BASE_CFG, "learning_rate": 1e-4, "layers": [256, 256], "batch_size": 1024,
-     "optimizer": "sgd", "activation": "tanh", "weight_decay": 1e-3},
+    # --- A) Capacity sweep (AdamW, relu, lr=3e-4, bs=256) ---
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [8],      "batch_size": 256},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [8,8],      "batch_size": 256},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [16],      "batch_size": 256},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [16, 16],  "batch_size": 256},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [32],      "batch_size": 256},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [32, 32],  "batch_size": 256},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [64, 64],  "batch_size": 256},
 ]
+
+CONFIGS += [
+    # --- B) LR sweep (layers=[32,32], AdamW, relu, bs=256) ---
+    {**BASE_CFG, "learning_rate": 1e-3, "layers": [32, 32], "batch_size": 256},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [32, 32], "batch_size": 256},
+    {**BASE_CFG, "learning_rate": 1e-4, "layers": [32, 32], "batch_size": 256},
+]
+
+CONFIGS += [
+    # --- C) Batch size sweep (layers=[32,32], AdamW, relu, lr=3e-4) ---
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [32, 32], "batch_size": 128},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [32, 32], "batch_size": 256},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [32, 32], "batch_size": 512},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [32, 32], "batch_size": 0},   # full-batch baseline
+]
+
+CONFIGS += [
+    # --- D) Activation check (same everything else) ---
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [32, 32], "batch_size": 256, "activation": "tanh"},
+    {**BASE_CFG, "learning_rate": 3e-4, "layers": [32, 32], "batch_size": 256, "activation": "gelu"},
+]
+
+
 
 
 # --------------------------------------------------------------------
@@ -53,13 +71,52 @@ CONFIGS = [
 
 def _run_single(args):
     """Wrapper so it works nicely with multiprocessing."""
-    idx, cfg, run_dir, prefix = args
+    idx, cfg, run_dir, prefix, aim_repo, target_dir, model_type = args
     base_name = f"{prefix}-{idx}"
 
     print(f"[{base_name}] Starting with cfg={cfg}")
+    
+    # Initialize Aim run for tracking
+    aim_run = Run(repo=aim_repo, experiment=prefix)
+    aim_run.name = base_name
+    
+    # Log metadata
+    aim_run["date"] = datetime.now().isoformat()
+    aim_run["dataset_path"] = run_dir
+    
+    # Log all hyperparameters individually for better filtering
+    aim_run["hparams"] = {
+        "model_type": model_type,
+        "learning_rate": cfg.get("learning_rate"),
+        "epochs": cfg.get("epochs"),
+        "layers": cfg.get("layers"),
+        "batch_size": cfg.get("batch_size"),
+        "val_split": cfg.get("val_split"),
+        "val_padding": cfg.get("val_padding"),
+        "weight_decay": cfg.get("weight_decay"),
+        "activation": cfg.get("activation"),
+        "optimizer": cfg.get("optimizer"),
+        "seed": cfg.get("seed"),
+    }
+    
     try:
-        res = train_model(cfg, run_dir, base_name)
+        res = train_model(cfg, run_dir, base_name, results_subdir=target_dir,
+                          model_type=model_type)
+        
+        # Log learning curves (per-epoch losses)
+        train_losses = res["train_losses"]
+        val_losses = res["val_losses"]
+        for epoch, (tr_loss, val_loss) in enumerate(zip(train_losses, val_losses), start=1):
+            aim_run.track(tr_loss, name="loss", step=epoch, context={"subset": "train"})
+            aim_run.track(val_loss, name="loss", step=epoch, context={"subset": "val"})
+        
+        # Log final metrics
+        aim_run["final_train_loss"] = res["final_train_loss"]
+        aim_run["final_val_loss"] = res["final_val_loss"]
+        aim_run["results_dir"] = res["results_dir"]
+        
         print(f"[{base_name}] Done. val_loss={res['final_val_loss']:.6f}")
+        aim_run.close()
         return {
             "base_name": base_name,
             "cfg": cfg,
@@ -70,6 +127,8 @@ def _run_single(args):
         }
     except Exception as e:
         print(f"[{base_name}] ERROR: {e}")
+        aim_run["error"] = str(e)
+        aim_run.close()
         return {
             "base_name": base_name,
             "cfg": cfg,
@@ -90,7 +149,7 @@ def main():
     parser.add_argument(
         "--run-dir",
         default="../../data/random_flight/csv_data/test2",
-        help="Path to dataset folder containing estimations.csv, odom1.csv, odom2.csv",
+        help="Path to dataset folder containing neccesary csv files",
     )
 
     parser.add_argument(
@@ -102,8 +161,27 @@ def main():
     parser.add_argument(
         "--processes",
         type=int,
-        default=2,
-        help="Number of parallel processes (default: 2)",
+        default=12,
+        help="Number of parallel processes (default: 12)",
+    )
+
+    parser.add_argument(
+        "--aim-repo",
+        default=".aim",
+        help="Path to Aim repository for tracking (default: .aim)",
+    )
+
+    parser.add_argument(
+        "--target-dir",
+        default=None,
+        help="Sub-directory under ./results/ for saving outputs (e.g. 'my_experiment')",
+    )
+
+    parser.add_argument(
+        "--model-type",
+        choices=["3d", "blinkers", "blinkers_and_3d"],
+        default="3d",
+        help="Which model to train (default: 3d)",
     )
 
     args = parser.parse_args()
@@ -111,17 +189,24 @@ def main():
     run_dir = os.path.abspath(args.run_dir)
     prefix = args.prefix
     nproc = args.processes
+    aim_repo = os.path.abspath(args.aim_repo)
+    target_dir = args.target_dir
+    model_type = args.model_type
 
     print("===================================================")
     print(f" Dataset:          {run_dir}")
+    print(f" Model type:       {model_type}")
     print(f" Name prefix:      {prefix}")
     print(f" Parallel workers: {nproc}")
+    print(f" Aim repo:         {aim_repo}")
+    print(f" Target dir:       ./results/{target_dir or ''}")
     print("===================================================")
 
     os.makedirs("results", exist_ok=True)
 
     # Prepare jobs
-    jobs = [(idx, cfg, run_dir, prefix) for idx, cfg in enumerate(CONFIGS)]
+    jobs = [(idx, cfg, run_dir, prefix, aim_repo, target_dir, model_type)
+            for idx, cfg in enumerate(CONFIGS)]
 
     mp.set_start_method("spawn", force=True)
 

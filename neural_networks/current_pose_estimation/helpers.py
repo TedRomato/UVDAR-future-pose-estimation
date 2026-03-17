@@ -71,9 +71,28 @@ def align_three_streams_on_uvdar(est_df, od1_df, od2_df):
             od2_al.values.astype(np.float32),
             t_sec)
 
-def ensure_fresh_results_dir(name: str) -> str:
-    """Create ./results/<name> if it does not exist; error if it does."""
-    out = os.path.join(".", "results", name)
+
+def align_two_streams(input_df, target_df):
+    """Align input (predicted_relative_pose) and target (true_relative_pose)
+    on the input timeline using nearest-neighbour interpolation.
+
+    Returns (input_xyz, target_xyz, t_sec) as float32 / float64 arrays.
+    """
+    ref_ms = np.unique(input_df["t_ms"].values)
+    target_al = interpolate_on_index(ref_ms, target_df)
+    input_on_ref = (input_df.set_index("t_ms").loc[ref_ms])[["x", "y", "z"]]
+    t_sec = ref_ms.astype(np.float64) / 1000.0
+    return (input_on_ref.values.astype(np.float32),
+            target_al.values.astype(np.float32),
+            t_sec)
+
+
+def ensure_fresh_results_dir(name: str, subdir: str = None) -> str:
+    """Create ./results/[subdir/]<name> if it does not exist; error if it does."""
+    if subdir:
+        out = os.path.join(".", "results", subdir, name)
+    else:
+        out = os.path.join(".", "results", name)
     if os.path.exists(out):
         raise FileExistsError(f"Results folder already exists: {out}")
     os.makedirs(out, exist_ok=False)
