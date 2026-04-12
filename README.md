@@ -5,7 +5,8 @@ MRS TOOLS:
 - mrs (in docker), sets up the system
 
 DATA TOOLS:
-- python3 bag_parser.py <path_to_bag> to convert rosbags to csv
+- python3 bag_parser.py --from YYYY-MM-DD --to YYYY-MM-DD   (parse bags by date range)
+- python3 bag_parser.py /path/to/bags/*.bag                   (parse specific bag files)
 - python3 visualize_flight.py <path_to_csv> to generate graphs for a flight
 - start_simulation.sh (in docker), start two drone simulation
 - run_data_collection.sh <dataset> <flight_number/name> (in docker) runs all necessary commands and collects odom and uvdar position data of a flight trajectory, in trajectory1.txt in uav_trajectory_loader. It turns off automatically after the data is collected.

@@ -1,0 +1,206 @@
+# ======================================================================
+# Sweep configurations — hypothesis-driven experiments
+#
+# Structure:
+#   bases:   Named preset configs (uvdar, blinkers, fusion).
+#   sweeps:  Groups of experiments. Each entry specifies:
+#              - name:  human-readable run identifier (required)
+#              - base:  which base preset to inherit from (required)
+#              - ...    any override keys (merged on top of the base)
+#
+# Results are saved to: results/[target_dir/]<group_name>/<name>_val.../
+# ======================================================================
+
+
+# ------------------------------------------------------------------
+# Base presets — shared defaults for each modality
+# ------------------------------------------------------------------
+bases:
+
+  uvdar:
+    features:
+      blinkers: { enabled: false, max_leds: 4, min_leds: 2 }
+      uvdar:    { enabled: true,  components: [position] }
+      derived:  []
+    epochs: 125
+    val_split: 0.3
+    val_padding: 0
+    split_mode: sequential
+    weight_decay: 1.0e-4
+    activation: relu
+    optimizer: adamw
+    seed: 42
+    learning_rate: 3.0e-4
+    layers: [32, 32]
+    batch_size: 256
+    residual_learning: false
+
+  blinkers:
+    features:
+      blinkers: { enabled: true,  max_leds: 4, min_leds: 2 }
+      uvdar:    { enabled: false, components: [position] }
+      derived:  []
+    epochs: 125
+    val_split: 0.3
+    val_padding: 0
+    split_mode: sequential
+    weight_decay: 1.0e-4
+    activation: relu
+    optimizer: adamw
+    seed: 42
+    learning_rate: 3.0e-4
+    layers: [64, 64]
+    batch_size: 256
+    residual_learning: false
+
+  fusion:
+    features:
+      blinkers: { enabled: true,  max_leds: 4, min_leds: 2 }
+      uvdar:    { enabled: true,  components: [position] }
+      derived:  [age]
+    epochs: 125
+    val_split: 0.3
+    val_padding: 0
+    split_mode: sequential
+    weight_decay: 1.0e-4
+    activation: relu
+    optimizer: adamw
+    seed: 42
+    learning_rate: 3.0e-4
+    layers: [64, 64]
+    batch_size: 256
+    residual_learning: true
+
+
+# ------------------------------------------------------------------
+# Sweep groups
+# ------------------------------------------------------------------
+sweeps:
+
+  # ----------------------------------------------------------------
+  # UVDAR: does residual learning help?
+  # ----------------------------------------------------------------
+  uvdar-core-residual:
+    - { name: direct,   base: uvdar, residual_learning: false }
+    - { name: residual, base: uvdar, residual_learning: true }
+
+  # ----------------------------------------------------------------
+  # UVDAR: sequential vs random split (both modes)
+  # ----------------------------------------------------------------
+  uvdar-split-check:
+    - { name: direct-sequential,   base: uvdar, residual_learning: false, split_mode: sequential }
+    - { name: direct-random,       base: uvdar, residual_learning: false, split_mode: random }
+    - { name: residual-sequential, base: uvdar, residual_learning: true,  split_mode: sequential }
+    - { name: residual-random,     base: uvdar, residual_learning: true,  split_mode: random }
+
+  # ----------------------------------------------------------------
+  # UVDAR: seed stability check
+  # ----------------------------------------------------------------
+  uvdar-core-seeds:
+    - { name: direct-seed41,   base: uvdar, residual_learning: false, seed: 41 }
+    - { name: direct-seed42,   base: uvdar, residual_learning: false, seed: 42 }
+    - { name: direct-seed43,   base: uvdar, residual_learning: false, seed: 43 }
+    - { name: residual-seed41, base: uvdar, residual_learning: true,  seed: 41 }
+    - { name: residual-seed42, base: uvdar, residual_learning: true,  seed: 42 }
+    - { name: residual-seed43, base: uvdar, residual_learning: true,  seed: 43 }
+
+  # ----------------------------------------------------------------
+  # UVDAR: regularization sanity (residual only)
+  # ----------------------------------------------------------------
+  uvdar-residual-wd:
+    - { name: wd-1e-3, base: uvdar, residual_learning: true, weight_decay: 1.0e-3 }
+    - { name: wd-1e-4, base: uvdar, residual_learning: true, weight_decay: 1.0e-4 }
+    - { name: wd-1e-5, base: uvdar, residual_learning: true, weight_decay: 1.0e-5 }
+
+  # ----------------------------------------------------------------
+  # UVDAR: batch-size sanity (residual only)
+  # ----------------------------------------------------------------
+  uvdar-residual-batch:
+    - { name: bs-128,  base: uvdar, residual_learning: true, batch_size: 128 }
+    - { name: bs-256,  base: uvdar, residual_learning: true, batch_size: 256 }
+    - { name: bs-full, base: uvdar, residual_learning: true, batch_size: 0 }
+
+  # ----------------------------------------------------------------
+  # Blinkers: core baseline
+  # ----------------------------------------------------------------
+  blinkers-core:
+    - { name: baseline, base: blinkers }
+
+  # ----------------------------------------------------------------
+  # Blinkers: robustness to visible LED count
+  # ----------------------------------------------------------------
+  blinkers-led-visibility:
+    - { name: leds-2, base: blinkers, features: { blinkers: { enabled: true, max_leds: 2, min_leds: 2 }, uvdar: { enabled: false, components: [position] }, derived: [] } }
+    - { name: leds-3, base: blinkers, features: { blinkers: { enabled: true, max_leds: 3, min_leds: 3 }, uvdar: { enabled: false, components: [position] }, derived: [] } }
+    - { name: leds-4, base: blinkers, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 4 }, uvdar: { enabled: false, components: [position] }, derived: [] } }
+
+  # ----------------------------------------------------------------
+  # Blinkers: permissive 2-4 LED setup
+  # ----------------------------------------------------------------
+  blinkers-led-flex:
+    - { name: flex-2to4, base: blinkers }
+
+  # ----------------------------------------------------------------
+  # Blinkers: seed stability
+  # ----------------------------------------------------------------
+  blinkers-core-seeds:
+    - { name: seed41, base: blinkers, seed: 41 }
+    - { name: seed42, base: blinkers, seed: 42 }
+    - { name: seed43, base: blinkers, seed: 43 }
+
+  # ----------------------------------------------------------------
+  # Fusion: direct vs residual
+  # ----------------------------------------------------------------
+  fusion-core-residual:
+    - { name: direct,   base: fusion, residual_learning: false }
+    - { name: residual, base: fusion, residual_learning: true }
+
+  # ----------------------------------------------------------------
+  # Fusion: does age help? (residual mode)
+  # ----------------------------------------------------------------
+  fusion-age-ablation:
+    - { name: age,   base: fusion, residual_learning: true, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 2 }, uvdar: { enabled: true, components: [position] }, derived: [age] } }
+    - { name: noage, base: fusion, residual_learning: true, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 2 }, uvdar: { enabled: true, components: [position] }, derived: [] } }
+
+  # ----------------------------------------------------------------
+  # Fusion: sequential vs random split
+  # ----------------------------------------------------------------
+  fusion-split-check:
+    - { name: sequential, base: fusion, residual_learning: true, split_mode: sequential }
+    - { name: random,     base: fusion, residual_learning: true, split_mode: random }
+
+  # ----------------------------------------------------------------
+  # Fusion: LED robustness
+  # ----------------------------------------------------------------
+  fusion-led-visibility:
+    - { name: leds-2, base: fusion, residual_learning: true, features: { blinkers: { enabled: true, max_leds: 2, min_leds: 2 }, uvdar: { enabled: true, components: [position] }, derived: [age] } }
+    - { name: leds-3, base: fusion, residual_learning: true, features: { blinkers: { enabled: true, max_leds: 3, min_leds: 3 }, uvdar: { enabled: true, components: [position] }, derived: [age] } }
+    - { name: leds-4, base: fusion, residual_learning: true, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 4 }, uvdar: { enabled: true, components: [position] }, derived: [age] } }
+
+  # ----------------------------------------------------------------
+  # Fusion: seed stability (with and without age)
+  # ----------------------------------------------------------------
+  fusion-core-seeds:
+    - { name: age-seed41,   base: fusion, residual_learning: true, seed: 41, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 2 }, uvdar: { enabled: true, components: [position] }, derived: [age] } }
+    - { name: age-seed42,   base: fusion, residual_learning: true, seed: 42, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 2 }, uvdar: { enabled: true, components: [position] }, derived: [age] } }
+    - { name: age-seed43,   base: fusion, residual_learning: true, seed: 43, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 2 }, uvdar: { enabled: true, components: [position] }, derived: [age] } }
+    - { name: noage-seed41, base: fusion, residual_learning: true, seed: 41, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 2 }, uvdar: { enabled: true, components: [position] }, derived: [] } }
+    - { name: noage-seed42, base: fusion, residual_learning: true, seed: 42, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 2 }, uvdar: { enabled: true, components: [position] }, derived: [] } }
+    - { name: noage-seed43, base: fusion, residual_learning: true, seed: 43, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 2 }, uvdar: { enabled: true, components: [position] }, derived: [] } }
+
+  # ----------------------------------------------------------------
+  # Fusion: regularization sanity (residual + age)
+  # ----------------------------------------------------------------
+  fusion-residual-wd:
+    - { name: wd-1e-3, base: fusion, residual_learning: true, weight_decay: 1.0e-3 }
+    - { name: wd-1e-4, base: fusion, residual_learning: true, weight_decay: 1.0e-4 }
+    - { name: wd-1e-5, base: fusion, residual_learning: true, weight_decay: 1.0e-5 }
+
+  # ----------------------------------------------------------------
+  # Fusion: batch-size sanity (residual + age)
+  # ----------------------------------------------------------------
+  fusion-residual-batch:
+    - { name: bs-128,  base: fusion, residual_learning: true, batch_size: 128 }
+    - { name: bs-256,  base: fusion, residual_learning: true, batch_size: 256 }
+    - { name: bs-full, base: fusion, residual_learning: true, batch_size: 0 }
+

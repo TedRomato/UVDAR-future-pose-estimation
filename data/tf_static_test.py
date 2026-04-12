@@ -3,7 +3,7 @@
 Print the T_fixed_local (fixed_origin → local_origin) static transform
 from every .bag file under bags/.
 
-This is the transform used in bag_parser_multi.py. Helps diagnose artifacts
+This is the transform used in bag_parser.py. Helps diagnose artifacts
 where values change across successive rosbags in the same flight.
 """
 

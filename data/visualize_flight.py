@@ -3,7 +3,7 @@
 Visualization helpers for UVDAR flight data.
 
 Can be used standalone (``python3 visualize_flight.py <csv_dir>``) or as an
-importable module — ``bag_parser_multi`` imports ``plot_all`` from here.
+importable module — ``bag_parser`` imports ``plot_all`` from here.
 """
 import argparse
 import os
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from types import SimpleNamespace
 
 
-# == PoseData-based plotting (used by bag_parser_multi) ========================
+# == PoseData-based plotting (used by bag_parser) =============================
 
 def _downsample(data, max_points=15000):
     """Uniformly-strided subset with at most max_points entries."""
@@ -273,7 +273,7 @@ def _parse_hhmm(text):
 
 def main():
     ap = argparse.ArgumentParser(
-        description="Visualise flight CSV data (identical 5-panel plot to bag_parser_multi)."
+        description="Visualise flight CSV data (identical 5-panel plot to bag_parser)."
     )
     ap.add_argument(
         "run_dir",
