@@ -1,12 +1,5 @@
 git
-
-workspace/**
-!workspace/src/
-!workspace/src/uvdar_core/
-!workspace/src/uvdar_core/scripts/
-!workspace/src/uvdar_core/scripts/two_drones/
-!workspace/src/uvdar_core/scripts/two_drones/session.yml
-
+workspace
 mrs_docker
 neural_networks/train_lstm_minmax_cv.py
 data/*/
