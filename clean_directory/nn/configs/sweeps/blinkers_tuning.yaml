@@ -1,0 +1,42 @@
+# ======================================================================
+# Blinkers-only sweep — impact of training parameters on blinker modality
+# ======================================================================
+
+bases:
+
+  blinkers:
+    features:
+      blinkers: { enabled: true,  max_leds: 4, min_leds: 2 }
+      uvdar:    { enabled: false, components: [position] }
+      derived:  []
+    epochs: 125
+    val_split: 0.3
+    val_padding: 0
+    split_mode: sequential
+    weight_decay: 1.0e-4
+    activation: relu
+    optimizer: adamw
+    seed: 42
+    learning_rate: 3.0e-4
+    layers: [64, 64]
+    batch_size: 256
+    residual_learning: false
+
+
+sweeps:
+
+  blinkers-core:
+    - { name: baseline, base: blinkers }
+
+  blinkers-led-visibility:
+    - { name: leds-2, base: blinkers, features: { blinkers: { enabled: true, max_leds: 2, min_leds: 2 }, uvdar: { enabled: false, components: [position] }, derived: [] } }
+    - { name: leds-3, base: blinkers, features: { blinkers: { enabled: true, max_leds: 3, min_leds: 3 }, uvdar: { enabled: false, components: [position] }, derived: [] } }
+    - { name: leds-4, base: blinkers, features: { blinkers: { enabled: true, max_leds: 4, min_leds: 4 }, uvdar: { enabled: false, components: [position] }, derived: [] } }
+
+  blinkers-led-flex:
+    - { name: flex-2to4, base: blinkers }
+
+  blinkers-core-seeds:
+    - { name: seed41, base: blinkers, seed: 41 }
+    - { name: seed42, base: blinkers, seed: 42 }
+    - { name: seed43, base: blinkers, seed: 43 }

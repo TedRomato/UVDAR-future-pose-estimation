@@ -1,0 +1,40 @@
+# ====================================================================
+# Default configuration for clean_directory NN
+# ====================================================================
+
+# --------------------------------------------------------------------
+# Feature selection
+# --------------------------------------------------------------------
+features:
+  blinkers:
+    enabled: true
+    max_leds: 4           # fixed-size LED slots in the feature vector
+    min_leds: 2           # rows with fewer detections are dropped
+
+  uvdar:
+    enabled: false
+    components:           # which parts of the UVDAR output to include
+      - position          # [x, y, z]  —  the 3D estimate
+
+  # Computed features (depend on active modalities)
+  derived: []
+
+# --------------------------------------------------------------------
+# Model architecture
+# --------------------------------------------------------------------
+layers: [64, 64]
+activation: relu          # relu | leaky_relu | tanh | gelu | elu
+
+# --------------------------------------------------------------------
+# Training
+# --------------------------------------------------------------------
+learning_rate: 0.001
+optimizer: adamw            # adam | adamw | sgd
+weight_decay: 0.0001
+epochs: 100
+batch_size: 256             # 0 → full-batch
+val_split: 0.2
+val_padding: 0            # gap (samples) between train/val splits
+split_mode: sequential     # sequential | random
+seed: 42
+residual_learning: false   # true → learn UVDAR error instead of full mapping
