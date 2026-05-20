@@ -1,0 +1,1000 @@
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 176000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/gps_baro_origin_att_only"
+    transform: 
+      translation: 
+        x: -0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.003178223917014511
+        y: 0.0018676695558825379
+        z: -2.6265226164267564e-05
+        w: 0.9999932049835645
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 176000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/gps_baro_origin"
+    transform: 
+      translation: 
+        x: -2.008675784415289
+        y: -2.0168991419533855
+        z: -1.9801019158681192
+      rotation: 
+        x: -0.003178223917014511
+        y: 0.0018676695558825379
+        z: -2.6265226164267564e-05
+        w: 0.9999932049835645
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 176000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/stable_origin"
+    transform: 
+      translation: 
+        x: -2.008675784415289
+        y: -2.0168991419533855
+        z: -1.9801019158681192
+      rotation: 
+        x: -0.003178223917014511
+        y: 0.0018676695558825379
+        z: -2.6265226164267564e-05
+        w: 0.9999932049835645
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 176000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/fixed_origin"
+    transform: 
+      translation: 
+        x: -2.008675784415289
+        y: -2.0168991419533855
+        z: -1.9801019158681192
+      rotation: 
+        x: -0.003178223917014511
+        y: 0.0018676695558825379
+        z: -2.6265226164267564e-05
+        w: 0.9999932049835645
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 176000000
+      frame_id: "uav2/fcu_untilted"
+    child_frame_id: "uav2/garmin_agl_origin"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: -5.514270237444726
+      rotation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 176000000
+      frame_id: "uav1/gps_origin"
+    child_frame_id: "gazebo_user_camera"
+    transform: 
+      translation: 
+        x: 5.68870210647583
+        y: -1.8078789710998535
+        z: 10.98298454284668
+      rotation: 
+        x: -0.366366931316462
+        y: 0.057164636449021235
+        z: 0.9176100439638079
+        w: 0.1431757074162674
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/fcu_untilted"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.0031860385083001047
+        y: 0.0018639820195200474
+        z: -5.93875929281707e-06
+        w: 0.9999931873243423
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/gps_garmin_origin_att_only"
+    transform: 
+      translation: 
+        x: -0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/gps_baro_origin"
+    transform: 
+      translation: 
+        x: -0.0104320645071177
+        y: -0.045648876069582
+        z: -1.000638792207931
+      rotation: 
+        x: -0.004105888395613143
+        y: -0.0017178403855998866
+        z: -0.7832160055946231
+        w: 0.621733768815315
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/gps_garmin_origin"
+    transform: 
+      translation: 
+        x: -2.021718047977232
+        y: -2.0394464837795776
+        z: -5.4963049181482955
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/gps_baro_origin_att_only"
+    transform: 
+      translation: 
+        x: -0.0104320645071177
+        y: -0.045648876069582
+        z: -1.000638792207931
+      rotation: 
+        x: -0.004105888395613143
+        y: -0.0017178403855998866
+        z: -0.7832160055946231
+        w: 0.621733768815315
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/stable_origin"
+    transform: 
+      translation: 
+        x: -0.0104320645071177
+        y: -0.045648876069582
+        z: -1.000638792207931
+      rotation: 
+        x: -0.004105888395613143
+        y: -0.0017178403855998866
+        z: -0.7832160055946231
+        w: 0.621733768815315
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/gps_baro_origin_att_only"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.004105888395613143
+        y: -0.0017178403855998866
+        z: -0.7832160055946231
+        w: 0.621733768815315
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/fixed_origin"
+    transform: 
+      translation: 
+        x: -0.0104320645071177
+        y: -0.045648876069582
+        z: -1.000638792207931
+      rotation: 
+        x: -0.004105888395613143
+        y: -0.0017178403855998866
+        z: -0.7832160055946231
+        w: 0.621733768815315
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/utm_origin"
+    transform: 
+      translation: 
+        x: -465840.6287516202
+        y: -5249338.55680076
+        z: 35133.687299673984
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/gps_garmin_origin_att_only"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.004105888395613143
+        y: -0.0017178403855998866
+        z: -0.7832160055946231
+        w: 0.621733768815315
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/world_origin"
+    transform: 
+      translation: 
+        x: -2.014988287934102
+        y: -2.0355107206851244
+        z: -5.496355086630501
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/gps_garmin_origin"
+    transform: 
+      translation: 
+        x: -0.028735750314712066
+        y: -0.07887030906021103
+        z: -5.261584280716689
+      rotation: 
+        x: -0.004105888395613143
+        y: -0.0017178403855998866
+        z: -0.7832160055946231
+        w: 0.621733768815315
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/ground_truth_origin"
+    transform: 
+      translation: 
+        x: -2.012408809563756
+        y: -1.9944220013487148
+        z: -5.518993702036961
+      rotation: 
+        x: 0.0008214216039307685
+        y: 0.00015376409750042733
+        z: -0.004936520223814591
+        w: 0.9999874661170663
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/utm_origin"
+    transform: 
+      translation: 
+        x: -5006896.627326004
+        y: 1644592.9207582262
+        z: 8633.097189426628
+      rotation: 
+        x: -0.004105888395613143
+        y: -0.0017178403855998866
+        z: -0.7832160055946231
+        w: 0.621733768815315
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/world_origin"
+    transform: 
+      translation: 
+        x: -0.0264193182811141
+        y: -0.06738095544278622
+        z: -5.261683810749673
+      rotation: 
+        x: -0.004105888395613143
+        y: -0.0017178403855998866
+        z: -0.7832160055946231
+        w: 0.621733768815315
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/ground_truth_origin"
+    transform: 
+      translation: 
+        x: -0.026946990953630314
+        y: -0.029375683605223725
+        z: -5.280330675991425
+      rotation: 
+        x: -0.0003415589812729941
+        y: -0.0004890520168660775
+        z: -0.7877362813079126
+        w: 0.6160123337050712
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 180000000
+      frame_id: "uav1/fcu_untilted"
+    child_frame_id: "uav1/garmin_agl_origin"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: -5.263300725168586
+      rotation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 184000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/fcu_untilted"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.0038806436117048435
+        y: 0.0021326996361515594
+        z: -8.279688947843829e-06
+        w: 0.9999901981331452
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 184000000
+      frame_id: "uav1/fcu_untilted"
+    child_frame_id: "uav1/amsl_origin"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: -52.436916637150254
+      rotation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/gps_baro_origin_att_only"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.004083141358352397
+        y: -0.0017134056843588112
+        z: -0.7832178674321707
+        w: 0.6217315854390952
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/gps_baro_origin"
+    transform: 
+      translation: 
+        x: -0.010342247665616462
+        y: -0.045409477379913764
+        z: -1.000649296778079
+      rotation: 
+        x: -0.004083141358352397
+        y: -0.0017134056843588112
+        z: -0.7832178674321707
+        w: 0.6217315854390952
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/gps_baro_origin_att_only"
+    transform: 
+      translation: 
+        x: -0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/stable_origin"
+    transform: 
+      translation: 
+        x: -0.010342247665616462
+        y: -0.045409477379913764
+        z: -1.000649296778079
+      rotation: 
+        x: -0.004083141358352397
+        y: -0.0017134056843588112
+        z: -0.7832178674321707
+        w: 0.6217315854390952
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/gps_baro_origin"
+    transform: 
+      translation: 
+        x: -2.0086398499563143
+        y: -2.0170107428779143
+        z: -1.980083252101676
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/fixed_origin"
+    transform: 
+      translation: 
+        x: -0.010342247665616462
+        y: -0.045409477379913764
+        z: -1.000649296778079
+      rotation: 
+        x: -0.004083141358352397
+        y: -0.0017134056843588112
+        z: -0.7832178674321707
+        w: 0.6217315854390952
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/ground_truth_origin"
+    transform: 
+      translation: 
+        x: -2.0122747303672064
+        y: -1.994750357125347
+        z: -5.519368446233905
+      rotation: 
+        x: 0.0008089160178154768
+        y: 0.00014778025603730453
+        z: -0.004935750401815198
+        w: 0.9999874810135589
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/stable_origin"
+    transform: 
+      translation: 
+        x: -2.0086398499563143
+        y: -2.0170107428779143
+        z: -1.980083252101676
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/fixed_origin"
+    transform: 
+      translation: 
+        x: -2.0086398499563143
+        y: -2.0170107428779143
+        z: -1.980083252101676
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav2/fcu_untilted"
+    child_frame_id: "uav2/garmin_agl_origin"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: -5.519011608425459
+      rotation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/gps_garmin_origin_att_only"
+    transform: 
+      translation: 
+        x: -0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 188000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/fcu_untilted"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.003857223828945264
+        y: 0.0021182472300509177
+        z: -8.174865958398059e-06
+        w: 0.9999903200126068
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/gps_garmin_origin"
+    transform: 
+      translation: 
+        x: -2.0217001604005764
+        y: -2.0394687768937776
+        z: -5.496300273040252
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/gps_garmin_origin"
+    transform: 
+      translation: 
+        x: -0.02836280297268237
+        y: -0.07835588085673335
+        z: -5.267038430774325
+      rotation: 
+        x: -0.004057256657901033
+        y: -0.0017040584416921458
+        z: -0.7832194156350881
+        w: 0.6217298302522332
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/utm_origin"
+    transform: 
+      translation: 
+        x: -465840.62873373256
+        y: -5249338.5568230525
+        z: 35133.687304319086
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/gps_garmin_origin_att_only"
+    transform: 
+      translation: 
+        x: -0.02836280297268237
+        y: -0.07835588085673335
+        z: -5.267038430774325
+      rotation: 
+        x: -0.004057256657901033
+        y: -0.0017040584416921458
+        z: -0.7832194156350881
+        w: 0.6217298302522332
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/world_origin"
+    transform: 
+      translation: 
+        x: -2.014970400254242
+        y: -2.0355330128222704
+        z: -5.496350441528193
+      rotation: 
+        x: -0.003186061584476458
+        y: 0.0018639421939674594
+        z: -1.840810162155071e-05
+        w: 0.9999931871729023
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/gps_garmin_origin_att_only"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.004057256657901033
+        y: -0.0017040584416921458
+        z: -0.7832194156350881
+        w: 0.6217298302522332
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/utm_origin"
+    transform: 
+      translation: 
+        x: -5006880.101140539
+        y: 1644644.0698028319
+        z: 8472.19677252675
+      rotation: 
+        x: -0.004057256657901033
+        y: -0.0017040584416921458
+        z: -0.7832194156350881
+        w: 0.6217298302522332
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav2/fcu_untilted"
+    child_frame_id: "uav2/amsl_origin"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: -52.68488782927449
+      rotation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/world_origin"
+    transform: 
+      translation: 
+        x: -0.026046247221529484
+        y: -0.06686654291115701
+        z: -5.267136881355327
+      rotation: 
+        x: -0.004057256657901033
+        y: -0.0017040584416921458
+        z: -0.7832194156350881
+        w: 0.6217298302522332
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/fcu_untilted"
+    transform: 
+      translation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+      rotation: 
+        x: -0.003210009442354478
+        y: 0.001843308622984187
+        z: -5.917078543707055e-06
+        w: 0.999993148985707
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 192000000
+      frame_id: "uav1/fcu"
+    child_frame_id: "uav1/ground_truth_origin"
+    transform: 
+      translation: 
+        x: -0.026716751756275785
+        y: -0.02873744268808647
+        z: -5.280883125929498
+      rotation: 
+        x: -0.00029942596555313514
+        y: -0.0004723315884792626
+        z: -0.7877403044277209
+        w: 0.6160072240055983
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 196000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/stable_origin"
+    transform: 
+      translation: 
+        x: -2.0084333612332306
+        y: -2.0173268933100235
+        z: -1.980068751767519
+      rotation: 
+        x: -0.0032100171699286388
+        y: 0.0018432948068487602
+        z: -1.0193392167904884e-05
+        w: 0.9999931489515909
+---
+transforms: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 230
+        nsecs: 196000000
+      frame_id: "uav2/fcu"
+    child_frame_id: "uav2/fixed_origin"
+    transform: 
+      translation: 
+        x: -2.0084333612332306
+        y: -2.0173268933100235
+        z: -1.980068751767519
+      rotation: 
+        x: -0.0032100171699286388
+        y: 0.0018432948068487602
+        z: -1.0193392167904884e-05
+        w: 0.9999931489515909
+---

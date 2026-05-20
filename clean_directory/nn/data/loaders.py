@@ -4,15 +4,33 @@ data/loaders.py — CSV loading for the clean_directory NN.
 The clean_directory CSVs already share a common nanosecond timestamp `t`
 column, so loaders just expose it as ``t_ns`` and dedup on it.
 
+Filenames inside a parsed-dataset directory come from
+``clean_directory/dataset_layout.yaml`` — re-exported here as
+``DATASET_LAYOUT`` so call sites (``features.py``, etc.) only need to
+import from this module.
+
 Provides:
     load_xyz       — load a t,x,y,z(,...) CSV
     load_blinkers  — load blinkers_right.csv
+    DATASET_LAYOUT — dict of canonical filenames inside a dataset dir
 """
 
 import ast
+import os
+import sys
 
 import numpy as np
 import pandas as pd
+
+# Make the workspace root importable so we can pull the canonical
+# filename layout from ``clean_directory.dataset_layout``. The nn/ tree
+# is normally executed with cwd=clean_directory/nn, hence this nudge.
+_REPO_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+from clean_directory.dataset_layout import LAYOUT as DATASET_LAYOUT  # noqa: E402
 
 
 # ------------------------------------------------------------------ #
@@ -58,7 +76,7 @@ def _parse_detections(raw: str) -> list[list[float]]:
 
 def load_blinkers(csv_path: str) -> pd.DataFrame:
     """
-    Read ``blinkers_right.csv``.
+    Read the blinkers CSV (``DATASET_LAYOUT['blinkers_right']``).
 
     Returns
     -------

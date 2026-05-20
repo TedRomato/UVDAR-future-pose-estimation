@@ -8,13 +8,13 @@ from cameraFOV import PyramidFOV, SamplingConfig
 class RandomFOVGoto:
     def __init__(self):
         # --- fixed defaults ---
-        self.odom_topic      = "/uav2/estimation_manager/odom_main"
-        self.uav1_goto_srv   = "/uav1/control_manager/goto"  # service
-        self.uav2_goto_srv   = "/uav2/control_manager/goto"  # service
+        self.observer_name   = "uav1"
+        self.flier_name      = "uav2"
         self.initial_delay   = 10.0
         self.target_radius   = 0.1     # meters
+        self.c_heading       = 0.0     # observer yaw [rad]
         
-        self.stop_speed_thr  = 0.05    # m/s, ### NEW
+        self.stop_speed_thr  = 0.05    # m/s
         self.last_target_time = rospy.Time.now()
         self.min_dt_between_targets = rospy.Duration(1)
         
@@ -40,11 +40,19 @@ class RandomFOVGoto:
         P_tl = np.array(data["P_tl"], float)   # abs pos
         P_br = np.array(data["P_br"], float)   # abs pos
         
-        dist_min      = float(data.get("distance_min", dist_min))
-        dist_max      = float(data.get("distance_max", dist_max))
-        min_z         = float(data.get("min_z",       min_z))
+        dist_min           = float(data.get("distance_min", dist_min))
+        dist_max           = float(data.get("distance_max", dist_max))
+        min_z              = float(data.get("min_z",       min_z))
         self.initial_delay = float(data.get("initial_delay", self.initial_delay))
         self.target_radius = float(data.get("target_radius", self.target_radius))
+        self.c_heading     = float(data.get("C_heading",    self.c_heading))
+        self.observer_name = str(data.get("observer_uav_name", self.observer_name))
+        self.flier_name    = str(data.get("flier_uav_name",   self.flier_name))
+
+        # --- build service / topic paths from UAV names ---
+        self.odom_topic    = f"/{self.flier_name}/estimation_manager/odom_main"
+        self.observer_goto = f"/{self.observer_name}/control_manager/goto"
+        self.flier_goto    = f"/{self.flier_name}/control_manager/goto"
 
         # --- FOV + sampling ---
         self.fov  = PyramidFOV.from_2_edge_points(C, P_tl, P_br, up_hint=np.array([0.0, 0.0, 1.0]))
@@ -55,9 +63,9 @@ class RandomFOVGoto:
 
         rospy.loginfo(f"[random_fov_goto] Ready | cfg={self.cfg_path} | target_radius={self.target_radius} m")
 
-        # --- move observer (UAV1) ---
-        self._goto_service(self.uav1_goto_srv, C[0], C[1], C[2], 0.0)
-        rospy.loginfo(f"uav1 → C: [{C[0]:.2f}, {C[1]:.2f}, {C[2]:.2f}]")
+        # --- move observer to C with heading ---
+        self._goto_service(self.observer_goto, C[0], C[1], C[2], self.c_heading)
+        rospy.loginfo(f"{self.observer_name} → C: [{C[0]:.2f}, {C[1]:.2f}, {C[2]:.2f}], hdg={self.c_heading:.2f} rad")
 
         rospy.sleep(self.initial_delay)
 
@@ -68,11 +76,10 @@ class RandomFOVGoto:
         rospy.Subscriber(self.odom_topic, Odometry, self.cb_odom)
 
     # --- helper: call /control_manager/goto service ---
-    def _goto_service(self, srv_name: str, x: float, y: float, z: float, pitch: float):
+    def _goto_service(self, srv_name: str, x: float, y: float, z: float, heading: float):
         try:
             rospy.wait_for_service(srv_name, timeout=5.0)
-
-            cmd = ["rosservice", "call", srv_name, f"[{x:.6f}, {y:.6f}, {z:.6f}, {pitch:.6f}]"]
+            cmd = ["rosservice", "call", srv_name, f"[{x:.6f}, {y:.6f}, {z:.6f}, {heading:.6f}]"]
             subprocess.check_call(cmd)
         except Exception as e:
             rospy.logwarn(f"[random_fov_goto] Service call failed: {e}")
@@ -86,8 +93,8 @@ class RandomFOVGoto:
             rospy.logwarn("[random_fov_goto] Failed to sample target.")
             return
         self.current_target = np.array(P, float)
-        self._goto_service(self.uav2_goto_srv, P[0], P[1], P[2], 0.0)
-        rospy.loginfo(f"uav2 → random: [{P[0]:.2f}, {P[1]:.2f}, {P[2]:.2f}]")
+        self._goto_service(self.flier_goto, P[0], P[1], P[2], 0.0)
+        rospy.loginfo(f"{self.flier_name} → random: [{P[0]:.2f}, {P[1]:.2f}, {P[2]:.2f}]")
 
         self.current_target = np.array(P, float)
         self.last_target_time = rospy.Time.now()

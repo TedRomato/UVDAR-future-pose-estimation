@@ -1,8 +1,21 @@
-C:    [-4.04, -3.71, 11.12]     # Be cautious to always find new edge points when changing the observer position
-P_tl: [9.10, -4.33, 16.93]
-P_br: [-15.42, -7.34, 4.11]
-distance_min: 6.0
-distance_max: 15.0
-min_z: 5.0
+# --- UAV names (used by all nodes) ---
+observer_uav_name: "uav1"
+flier_uav_name:    "uav2"
+
+# --- Observer (camera) 6D pose ---
+C:         [0, 0, 9.12]   # Be cautious to always find new edge points when changing the observer position
+C_heading: 1.78023584 #-0.542 <-This is value for left cam #2.7                    # observer yaw [rad] — must match the orientation used when acquiring P_tl / P_br
+
+# --- FOV corner rays (absolute positions) ---
+
+P_tl: [-4.55, 9.04, 10]
+P_br: [7.20, -5.26, 4]
+
+# --- Sampling parameters ---
+distance_min: 3.0
+distance_max: 30.0
+min_z: 3.0
 target_radius: 0.25   # meters to consider target reached
-initial_delay: 12.0   # seconds to wait after sending UAV1 to C before moving UAV2
+
+# --- Simulation only (ignored by real-drone observer_node / random_flier_node) ---
+initial_delay: 12.0   # seconds to wait after sending observer to C before moving flier

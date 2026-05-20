@@ -1,0 +1,64 @@
+# ======================================================================
+# UVDAR-only sweep — epoch budget + split-mode comparison
+#   * uvdar-epochs:        train for 1, 10, 20, 30, 40, 50 epochs
+#   * uvdar-split-50:      sequential vs random split at 50 epochs
+#   * best-split-50:       sequential vs random split for the best model
+#                          (fusion-centroid-residual) at 50 epochs
+# ======================================================================
+
+bases:
+
+  uvdar:
+    features:
+      blinkers: { enabled: false, max_leds: 4, min_leds: 2 }
+      uvdar:    { enabled: true,  components: [position] }
+      derived:  []
+    epochs: 50
+    val_split: 0.3
+    val_padding: 0
+    split_mode: sequential
+    weight_decay: 1.0e-4
+    activation: relu
+    optimizer: adamw
+    seed: 42
+    learning_rate: 3.0e-4
+    layers: [64, 64]
+    batch_size: 256
+    residual_learning: false
+
+  best:
+    features:
+      blinkers: { enabled: true,  max_leds: 4, min_leds: 2, encoding: centroid }
+      uvdar:    { enabled: true,  components: [position] }
+      derived:  []
+    epochs: 50
+    val_split: 0.3
+    val_padding: 0
+    split_mode: sequential
+    weight_decay: 1.0e-4
+    activation: relu
+    optimizer: adamw
+    seed: 42
+    learning_rate: 3.0e-4
+    layers: [64, 64]
+    batch_size: 256
+    residual_learning: true
+
+
+sweeps:
+
+  uvdar-epochs:
+    - { name: epochs-1,  base: uvdar, epochs: 1  }
+    - { name: epochs-10, base: uvdar, epochs: 10 }
+    - { name: epochs-20, base: uvdar, epochs: 20 }
+    - { name: epochs-30, base: uvdar, epochs: 30 }
+    - { name: epochs-40, base: uvdar, epochs: 40 }
+    - { name: epochs-50, base: uvdar, epochs: 50 }
+
+  uvdar-split-50:
+    - { name: sequential, base: uvdar, epochs: 50, split_mode: sequential }
+    - { name: random,     base: uvdar, epochs: 50, split_mode: random     }
+
+  best-split-50:
+    - { name: sequential, base: best,  epochs: 50, split_mode: sequential }
+    - { name: random,     base: best,  epochs: 50, split_mode: random     }

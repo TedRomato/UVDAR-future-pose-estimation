@@ -6,6 +6,7 @@ Public API:
 """
 
 import random
+import re
 
 import numpy as np
 import torch
@@ -77,15 +78,68 @@ def train_val_split(n: int, cfg: dict):
 #  Normalization                                                      #
 # ------------------------------------------------------------------ #
 
-def compute_normalization(Xtr: np.ndarray, Ytr: np.ndarray) -> dict:
+# Feature-name patterns for columns left as raw (binary LED-presence
+# masks ``m1..mK``). ``n_visible`` is min-max scaled separately using
+# the configured (min_leds, max_leds).
+NO_NORM_PATTERNS = (re.compile(r"^m\d+$"),)
+
+
+def _no_norm_mask(feature_names: list[str] | None, n_cols: int) -> np.ndarray:
+    """Boolean array of length n_cols, True for columns to leave unnormalised."""
+    if not feature_names:
+        return np.zeros(n_cols, dtype=bool)
+    if len(feature_names) != n_cols:
+        return np.zeros(n_cols, dtype=bool)
+    return np.array(
+        [any(p.match(name) for p in NO_NORM_PATTERNS) for name in feature_names],
+        dtype=bool,
+    )
+
+
+def compute_normalization(
+    Xtr: np.ndarray,
+    Ytr: np.ndarray,
+    feature_names: list[str] | None = None,
+    n_visible_range: tuple[float, float] | None = None,
+) -> dict:
     """
     Compute mean/std from the *training* set only.
 
+    Columns matching :data:`NO_NORM_PATTERNS` (LED-presence masks
+    ``m1..mK``) get mean=0 and std=1, so they pass through
+    ``apply_normalization`` unchanged (already in [0, 1]).
+
+    If ``n_visible`` is in ``feature_names`` and ``n_visible_range`` is
+    given as ``(min_leds, max_leds)``, that column is min-max scaled to
+    [0, 1] by setting mean = min_leds and std = (max_leds − min_leds),
+    so the standard ``(X − mean) / std`` arithmetic produces the right
+    thing and the saved normalization carries it through inference.
+
     Returns dict with keys X_mean, X_std, Y_mean, Y_std (each shape (1, D)).
     """
+    X_mean = Xtr.mean(axis=0, keepdims=True)
+    X_std  = Xtr.std(axis=0, keepdims=True) + 1e-8
+
+    skip = _no_norm_mask(feature_names, Xtr.shape[1])
+    if skip.any():
+        X_mean[0, skip] = 0.0
+        X_std[0, skip]  = 1.0
+
+    if (feature_names
+            and len(feature_names) == Xtr.shape[1]
+            and n_visible_range is not None
+            and "n_visible" in feature_names):
+        lo, hi = float(n_visible_range[0]), float(n_visible_range[1])
+        span = hi - lo
+        if span <= 0:
+            lo, span = 0.0, 1.0  # degenerate range → pass through
+        j = feature_names.index("n_visible")
+        X_mean[0, j] = lo
+        X_std[0, j]  = span
+
     return {
-        "X_mean": Xtr.mean(axis=0, keepdims=True),
-        "X_std":  Xtr.std(axis=0, keepdims=True) + 1e-8,
+        "X_mean": X_mean,
+        "X_std":  X_std,
         "Y_mean": Ytr.mean(axis=0, keepdims=True),
         "Y_std":  Ytr.std(axis=0, keepdims=True) + 1e-8,
     }
@@ -173,6 +227,7 @@ def train_pipeline(
     t_all: np.ndarray | None = None,
     extra_arrays: dict[str, np.ndarray] | None = None,
     uvdar_baseline: np.ndarray | None = None,
+    feature_names: list[str] | None = None,
 ) -> dict:
     """
     Full training pipeline shared by every pose-estimation variant.
@@ -230,7 +285,16 @@ def train_pipeline(
     Xval, Yval = X_all[idx_val], Y_target[idx_val]
 
     # Normalise (train stats only)
-    norm = compute_normalization(Xtr, Ytr)
+    blinkers_cfg = (cfg.get("features", {}) or {}).get("blinkers", {}) or {}
+    n_visible_range = (
+        float(blinkers_cfg.get("min_leds", 2)),
+        float(blinkers_cfg.get("max_leds", 4)),
+    )
+    norm = compute_normalization(
+        Xtr, Ytr,
+        feature_names=feature_names,
+        n_visible_range=n_visible_range,
+    )
     X_mean, X_std = norm["X_mean"], norm["X_std"]
     Y_mean, Y_std = norm["Y_mean"], norm["Y_std"]
 

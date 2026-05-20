@@ -1,8 +1,17 @@
 from __future__ import annotations
 from dataclasses import dataclass
+import sys
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (needed for 3D plots)
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from plot_style import apply_style  # noqa: E402
+
+apply_style()
 
 # ----------------------------- helpers -----------------------------
 
@@ -347,17 +356,18 @@ class PyramidFOV:
             pass  # older matplotlib versions
 
         # Camera center
-        ax.scatter(*self.C, color="black", s=40, label="Camera center")
+        ax.scatter(*self.C, color="black", s=60, marker="s", label="Camera center")
 
-        # Forward axis
+        # Forward axis (hidden)
         axis_len = (cfg.distance_max if cfg else 5.0)
         axis_end = self.C + self.f * axis_len
-        ax.plot(
-            [self.C[0], axis_end[0]],
-            [self.C[1], axis_end[1]],
-            [self.C[2], axis_end[2]],
-            color="red",
-            lw=2,
+        d_vec = axis_end - self.C
+        ax.quiver(
+            self.C[0], self.C[1], self.C[2],
+            d_vec[0],  d_vec[1],  d_vec[2],
+            color="tab:orange",
+            linewidth=2,
+            arrow_length_ratio=0.06,
             label="Axis",
         )
 
@@ -384,13 +394,23 @@ class PyramidFOV:
             print("[viz] far-rect side lengths:", np.round(side_lengths, 6))
 
             # ---- Draw ground plane (semi-transparent green) ----
-            size = d * 2  # extent
+            size = d * 20  # extent (way larger than the frustum)
             xx, yy = np.meshgrid(
                 np.linspace(-size, size, 2),
                 np.linspace(-size, size, 2)
             )
             zz = np.full_like(xx, GZ)
             ax.plot_surface(xx, yy, zz, color=(0.3, 0.8, 0.3, 0.25), linewidth=0, zorder=0)
+
+            # Proxy legend entries (plot_surface doesn't appear in legend; the
+            # FOV line styles are drawn many times below, so register a single
+            # legend handle each here using empty plots).
+            ax.plot([], [], [], color=(0.3, 0.8, 0.3), lw=8, alpha=0.4,
+                    label="Ground plane (z=ground_z)")
+            ax.plot([], [], [], color="gray", lw=1.6,
+                    label="FOV edges (above ground)")
+            ax.plot([], [], [], color=(0.2, 0.7, 0.2), lw=1.6, ls="--",
+                    label="FOV edges projected on ground")
 
             # ---- Draw apex→corner edges with ground clipping/projection ----
             drawn_pts = [self.C.copy()]
@@ -412,14 +432,14 @@ class PyramidFOV:
         if pts is not None and len(pts) > 0:
             ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], s=8, alpha=0.5, color="blue", label="Sampled points")
 
-        # Extra points to show (e.g., input edge points)
-        if extra_points is not None and len(extra_points) > 0:
-            ep = np.asarray(extra_points, dtype=float).reshape(-1, 3)
-            ax.scatter(
-                ep[:, 0], ep[:, 1], ep[:, 2],
-                s=40, color="limegreen", edgecolors="k", linewidths=0.5,
-                label=extra_label,
-            )
+        # Extra points to show (e.g., input edge points) -- hidden
+        # if extra_points is not None and len(extra_points) > 0:
+        #     ep = np.asarray(extra_points, dtype=float).reshape(-1, 3)
+        #     ax.scatter(
+        #         ep[:, 0], ep[:, 1], ep[:, 2],
+        #         s=40, color="limegreen", edgecolors="k", linewidths=0.5,
+        #         label=extra_label,
+        #     )
 
         # Labels
         ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
@@ -456,6 +476,20 @@ class PyramidFOV:
 
         ax.legend()
         plt.tight_layout()
+
+        def _save(event):
+            save_ax.set_visible(False)
+            fig.savefig("camera_fov.pgf", bbox_inches="tight", pad_inches=0.02)
+            fig.savefig("camera_fov.pdf", bbox_inches="tight", pad_inches=0.02)
+            fig.savefig("camera_fov.svg", bbox_inches="tight", pad_inches=0.02)
+            save_ax.set_visible(True)
+            fig.canvas.draw_idle()
+            print("Saved camera_fov.{pgf,pdf,svg}")
+
+        save_ax = fig.add_axes([0.82, 0.02, 0.12, 0.05])
+        save_button = Button(save_ax, "Save")
+        save_button.on_clicked(_save)
+
         plt.show()
 
 # ----------------------------- demo 1 - no rotation-----------------------------
@@ -557,8 +591,8 @@ if __name__ == "__main__":
 
 
     fov = PyramidFOV.from_2_edge_points(C, P_tl, P_br)
-    cfg = SamplingConfig(distance_min=6.0, distance_max=15.0, min_z=1.0, ground_z=0.0)
-    pts = fov.sample_points(200, cfg)
+    cfg = SamplingConfig(distance_min=15.0, distance_max=25.0, min_z=1.0, ground_z=0.0)
+    pts = fov.sample_points(500, cfg)
 
     input_points = np.vstack([P_tl, P_br])
     fov.visualize(pts, cfg, extra_points=input_points, extra_label="Input edge points")

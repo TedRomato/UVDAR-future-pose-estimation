@@ -72,7 +72,11 @@ def split_masks(num_samples: int, val_split: float):
 
 
 def rmse(values: np.ndarray) -> float:
-    return float(np.sqrt(np.mean(values ** 2)))
+    """RMSE that ignores NaN entries (returns NaN if everything is NaN)."""
+    sq = values ** 2
+    if np.all(np.isnan(sq)):
+        return float("nan")
+    return float(np.sqrt(np.nanmean(sq)))
 
 
 def improvement_pct(old_rmse: float, new_rmse: float) -> float:

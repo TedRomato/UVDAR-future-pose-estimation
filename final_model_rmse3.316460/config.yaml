@@ -1,0 +1,42 @@
+features:
+  blinkers:
+    enabled: true
+    max_leds: 4
+    min_leds: 2
+    encoding: absolute
+  uvdar:
+    enabled: false
+    components:
+    - position
+  derived: []
+layers:
+- 64
+- 64
+activation: relu
+learning_rate: 0.0003
+optimizer: adamw
+weight_decay: 0.0001
+epochs: 30
+batch_size: 256
+val_split: 0.3
+val_padding: 0
+split_mode: sequential
+seed: 42
+residual_learning: false
+_meta:
+  dataset_path: /home/tedromato/Documents/UVDAR-future-pose-estimation/clean_directory/data/merged_all
+  in_dim: 13
+  feature_names:
+  - u1
+  - v1
+  - m1
+  - u2
+  - v2
+  - m2
+  - u3
+  - v3
+  - m3
+  - u4
+  - v4
+  - m4
+  - n_visible

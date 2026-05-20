@@ -1,0 +1,25 @@
+# Canonical filenames for everything `parse.py` writes into a dataset
+# directory. All other code in the project (visualizers, NN loaders, etc.)
+# MUST read these names from `clean_directory.dataset_layout` instead of
+# hard-coding the strings.
+
+# Odometries (raw + densified at blinker timestamps), world frame.
+observer_odom_original:         observer_odom_original.csv
+observer_odom:                  observer_odom.csv
+flier_odom_original:            flier_odom_original.csv
+flier_odom:                     flier_odom.csv
+
+# Blinkers (right camera).
+blinkers_right:                 blinkers_right.csv
+
+# UVDAR pose estimate of the flier — original (publisher frame) and
+# re-expressed in the observer camera frame.
+original_uvdar_estimate:        original_uvdar_estimate.csv
+uvdar_estimate_in_camera_frame: uvdar_estimate_in_camera_frame.csv
+
+# Flier ground-truth pose, expressed in the observer camera frame.
+# This is the regression target for the NN.
+flier_odom_in_camera_frame:     flier_odom_in_camera_frame.csv
+
+# Sidecar text file with the bag list and join times.
+used_rosbags:                   used_rosbags.txt

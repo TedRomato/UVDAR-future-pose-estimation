@@ -1,0 +1,423 @@
+transforms:
+- frame_id: map
+  child_frame_id: map_ned
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  rot:
+    x: 0.7071067811865476
+    y: 0.7071067811865475
+    z: 4.329780281177466e-17
+    w: 4.329780281177467e-17
+- frame_id: odom
+  child_frame_id: odom_ned
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  rot:
+    x: 0.7071067811865476
+    y: 0.7071067811865475
+    z: 4.329780281177466e-17
+    w: 4.329780281177467e-17
+- frame_id: base_link
+  child_frame_id: base_link_frd
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  rot:
+    x: 1.0
+    y: 0.0
+    z: 0.0
+    w: 6.123233995736766e-17
+- frame_id: uav1/fcu
+  child_frame_id: uav1/garmin
+  pose:
+    x: 0.0
+    y: 0.0625
+    z: -0.009
+  rot:
+    x: 0.4999999999999999
+    y: 0.5
+    z: -0.5
+    w: 0.5000000000000001
+- frame_id: uav2/fcu
+  child_frame_id: uav2/garmin
+  pose:
+    x: 0.0
+    y: 0.0625
+    z: -0.009
+  rot:
+    x: 0.4999999999999999
+    y: 0.5
+    z: -0.5
+    w: 0.5000000000000001
+- frame_id: uav1/fcu
+  child_frame_id: uav1/rtk_antenna
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.2
+  rot:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+- frame_id: uav1/fcu
+  child_frame_id: uav1/uvcam_left
+  pose:
+    x: 0.03
+    y: 0.1
+    z: 0.06
+  rot:
+    x: -0.6963642403182444
+    y: 0.12278780396906709
+    z: -0.12278780396966833
+    w: 0.6963642403216542
+- frame_id: uav1/fixed_origin
+  child_frame_id: uav1/local_origin
+  pose:
+    x: 0.6092017028442521
+    y: -1.4415251367298016
+    z: 0.004729133535039832
+  rot:
+    x: -0.007826475237402729
+    y: -0.01025853967388967
+    z: 0.9519143178973063
+    w: -0.30609247178294546
+- frame_id: uav1/fcu
+  child_frame_id: uav1/uvcam_right
+  pose:
+    x: 0.03
+    y: -0.1
+    z: 0.06
+  rot:
+    x: -0.12278780403514974
+    y: 0.6963642403065923
+    z: -0.6963642403100021
+    w: 0.122787804035751
+- frame_id: uav2/fcu
+  child_frame_id: uav2/rtk_antenna
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.2
+  rot:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+- frame_id: uav1/fcu
+  child_frame_id: uav1/uvcam_back
+  pose:
+    x: -0.1
+    y: 0.0
+    z: -0.02
+  rot:
+    x: 0.7071067811882787
+    y: 1.2691834972254956e-09
+    z: -0.7071067811848163
+    w: 1.2691834972317105e-09
+- frame_id: uav2/fixed_origin
+  child_frame_id: uav2/local_origin
+  pose:
+    x: 5.028473219389012
+    y: -0.04236136101241215
+    z: 0.009888266330425386
+  rot:
+    x: -0.01036266498600004
+    y: 0.008992822033172542
+    z: 0.33507050777766567
+    w: 0.9420931461721769
+- frame_id: uav2/fcu
+  child_frame_id: uav2/gps_baro_origin_att_only
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  rot:
+    x: -0.003186061584476458
+    y: 0.0018639421939674594
+    z: -1.840810162155071e-05
+    w: 0.9999931871729023
+- frame_id: uav2/fcu
+  child_frame_id: uav/gps_baro_origin
+  pose:
+    x: -2.0086398499563143
+    y: -2.0170107428779143
+    z: -5.980083252101676
+  rot:
+    x: -0.003186061584476458
+    y: 0.0018639421939674594
+    z: -1.840810162155071e-05
+    w: 0.9999931871729023
+- frame_id: uav2/fcu
+  child_frame_id: uav2/stable_origin
+  pose:
+    x: -2.0084333612332306
+    y: -2.0173268933100235
+    z: -1.980068751767519
+  rot:
+    x: -0.0032100171699286388
+    y: 0.0018432948068487602
+    z: -1.0193392167904884e-05
+    w: 0.9999931489515909
+- frame_id: uav2/fcu
+  child_frame_id: uav2/fixed_origin
+  pose:
+    x: -2.0084333612332306
+    y: -2.0173268933100235
+    z: -1.980068751767519
+  rot:
+    x: -0.0032100171699286388
+    y: 0.0018432948068487602
+    z: -1.0193392167904884e-05
+    w: 0.9999931489515909
+- frame_id: uav2/fcu_untilted
+  child_frame_id: uav2/garmin_agl_origin
+  pose:
+    x: 0.0
+    y: 0.0
+    z: -5.519011608425459
+  rot:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+- frame_id: uav1/gps_origin
+  child_frame_id: gazebo_user_camera
+  pose:
+    x: 5.68870210647583
+    y: -1.8078789710998535
+    z: 10.98298454284668
+  rot:
+    x: -0.366366931316462
+    y: 0.057164636449021235
+    z: 0.9176100439638079
+    w: 0.1431757074162674
+- frame_id: uav2/fcu
+  child_frame_id: uav2/fcu_untilted
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  rot:
+    x: -0.003210009442354478
+    y: 0.001843308622984187
+    z: -5.917078543707055e-06
+    w: 0.999993148985707
+- frame_id: uav2/fcu
+  child_frame_id: uav2/gps_garmin_origin_att_only
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  rot:
+    x: -0.003186061584476458
+    y: 0.0018639421939674594
+    z: -1.840810162155071e-05
+    w: 0.9999931871729023
+- frame_id: uav1/fcu
+  child_frame_id: uav/gps_baro_origin
+  pose:
+    x: -0.010342247665616462
+    y: -0.045409477379913764
+    z: -1.000649296778079
+  rot:
+    x: -0.004083141358352397
+    y: -0.0017134056843588112
+    z: -0.7832178674321707
+    w: 0.6217315854390952
+- frame_id: uav2/fcu
+  child_frame_id: uav2/gps_garmin_origin
+  pose:
+    x: -2.0217001604005764
+    y: -2.0394687768937776
+    z: -5.496300273040252
+  rot:
+    x: -0.003186061584476458
+    y: 0.0018639421939674594
+    z: -1.840810162155071e-05
+    w: 0.9999931871729023
+- frame_id: uav1/fcu
+  child_frame_id: uav1/gps_baro_origin_att_only
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  rot:
+    x: -0.004083141358352397
+    y: -0.0017134056843588112
+    z: -0.7832178674321707
+    w: 0.6217315854390952
+- frame_id: uav1/fcu
+  child_frame_id: uav1/stable_origin
+  pose:
+    x: -0.010342247665616462
+    y: -0.045409477379913764
+    z: -1.000649296778079
+  rot:
+    x: -0.004083141358352397
+    y: -0.0017134056843588112
+    z: -0.7832178674321707
+    w: 0.6217315854390952
+- frame_id: uav1/fcu
+  child_frame_id: uav1/fixed_origin
+  pose:
+    x: -0.010342247665616462
+    y: -0.045409477379913764
+    z: -1.000649296778079
+  rot:
+    x: -0.004083141358352397
+    y: -0.0017134056843588112
+    z: -0.7832178674321707
+    w: 0.6217315854390952
+- frame_id: uav2/fcu
+  child_frame_id: uav2/utm_origin
+  pose:
+    x: -465840.62873373256
+    y: -5249338.5568230525
+    z: 35133.687304319086
+  rot:
+    x: -0.003186061584476458
+    y: 0.0018639421939674594
+    z: -1.840810162155071e-05
+    w: 0.9999931871729023
+- frame_id: uav1/fcu
+  child_frame_id: uav1/gps_garmin_origin_att_only
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  rot:
+    x: -0.004057256657901033
+    y: -0.0017040584416921458
+    z: -0.7832194156350881
+    w: 0.6217298302522332
+- frame_id: uav2/fcu
+  child_frame_id: uav2/world_origin
+  pose:
+    x: -2.014970400254242
+    y: -2.0355330128222704
+    z: -5.496350441528193
+  rot:
+    x: -0.003186061584476458
+    y: 0.0018639421939674594
+    z: -1.840810162155071e-05
+    w: 0.9999931871729023
+- frame_id: uav1/fcu
+  child_frame_id: uav1/gps_garmin_origin
+  pose:
+    x: -0.02836280297268237
+    y: -0.07835588085673335
+    z: -5.267038430774325
+  rot:
+    x: -0.004057256657901033
+    y: -0.0017040584416921458
+    z: -0.7832194156350881
+    w: 0.6217298302522332
+- frame_id: uav2/fcu
+  child_frame_id: uav2/ground_truth_origin
+  pose:
+    x: -2.0122747303672064
+    y: -1.994750357125347
+    z: -5.519368446233905
+  rot:
+    x: 0.0008089160178154768
+    y: 0.00014778025603730453
+    z: -0.004935750401815198
+    w: 0.9999874810135589
+- frame_id: uav1/fcu
+  child_frame_id: uav1/utm_origin
+  pose:
+    x: -5006880.101140539
+    y: 1644644.0698028319
+    z: 8472.19677252675
+  rot:
+    x: -0.004057256657901033
+    y: -0.0017040584416921458
+    z: -0.7832194156350881
+    w: 0.6217298302522332
+- frame_id: uav1/fcu
+  child_frame_id: uav1/world_origin
+  pose:
+    x: -0.026046247221529484
+    y: -0.06686654291115701
+    z: -5.267136881355327
+  rot:
+    x: -0.004057256657901033
+    y: -0.0017040584416921458
+    z: -0.7832194156350881
+    w: 0.6217298302522332
+- frame_id: uav1/fcu
+  child_frame_id: uav1/ground_truth_origin
+  pose:
+    x: -0.026716751756275785
+    y: -0.02873744268808647
+    z: -5.280883125929498
+  rot:
+    x: -0.00029942596555313514
+    y: -0.0004723315884792626
+    z: -0.7877403044277209
+    w: 0.6160072240055983
+- frame_id: uav1/fcu_untilted
+  child_frame_id: uav1/garmin_agl_origin
+  pose:
+    x: 0.0
+    y: 0.0
+    z: -5.263300725168586
+  rot:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+- frame_id: uav1/fcu
+  child_frame_id: uav1/fcu_untilted
+  pose:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  rot:
+    x: -0.003857223828945264
+    y: 0.0021182472300509177
+    z: -8.174865958398059e-06
+    w: 0.9999903200126068
+- frame_id: uav1/fcu_untilted
+  child_frame_id: uav1/amsl_origin
+  pose:
+    x: 0.0
+    y: 0.0
+    z: -52.436916637150254
+  rot:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+- frame_id: uav2/fcu_untilted
+  child_frame_id: uav2/amsl_origin
+  pose:
+    x: 0.0
+    y: 0.0
+    z: -52.68488782927449
+  rot:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+
+
+    # rosservice call /uav2/control_manager/goto [2,2,2,0], rosservice call /uav1/control_manager/goto [0,0,1,1.8]
+
+- frame_id: se3/A
+  child_frame_id: se3/B
+  pose:
+    x: 1.5
+    y: 0.8
+    z: 0.4
+  rot:
+    x: 0.0
+    y: 0.0
+    z: 0.3007057995042731
+    w: 0.9537169507482269

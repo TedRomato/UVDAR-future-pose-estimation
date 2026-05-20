@@ -217,7 +217,8 @@ def save_results(
     str — path to the created results directory.
     """
     # Compute metrics early so we can use RMSE in the directory name
-    metrics = _compute_metrics(artifacts)
+    feature_names = (meta or {}).get("feature_names")
+    metrics = _compute_metrics(artifacts, feature_names=feature_names)
 
     rmse_str = f"{metrics['nn_rmse_val']:.6f}"
     results_dir = ensure_fresh_results_dir(
@@ -288,16 +289,20 @@ def _improvement_pct(old_rmse: float, new_rmse: float) -> float:
     return (1.0 - new_rmse / old_rmse) * 100.0
 
 
-def _compute_metrics(artifacts: dict) -> dict:
+def _compute_metrics(artifacts: dict, feature_names: list[str] | None = None) -> dict:
     """
     Compute RMSE metrics on validation data.
 
     Returns a JSON-serialisable dict with:
     - ``nn_rmse_val``       — NN RMSE on val set (3-D Euclidean)
     - ``nn_rmse_val_x/y/z`` — per-axis NN RMSE
+    - ``nn_rmse_val_by_n_visible`` — per-LED-count NN RMSE breakdown
+      (mapping ``"k"`` → ``{"rmse": float, "n": int}``), available
+      when ``feature_names`` includes ``"n_visible"``.
     - If UVDAR baseline is available:
         - ``uvdar_rmse_val``        — raw UVDAR RMSE on val set
         - ``uvdar_rmse_val_x/y/z``  — per-axis raw UVDAR RMSE
+        - ``uvdar_rmse_val_by_n_visible`` — per-LED-count UVDAR RMSE
         - ``improvement_pct``       — overall % improvement
         - ``improvement_pct_x/y/z`` — per-axis % improvement
     """
@@ -324,6 +329,21 @@ def _compute_metrics(artifacts: dict) -> dict:
         "nn_rmse_val_z": round(nn_rmse_axes["z"], 6),
     }
 
+    # Per-(n_visible) breakdown ────────────────────────────────────────
+    n_vis_val = _extract_n_visible(artifacts, feature_names, val_mask)
+    if n_vis_val is not None:
+        nn_breakdown: dict[str, dict] = {}
+        for k in sorted(np.unique(n_vis_val).astype(int).tolist()):
+            sel = n_vis_val == k
+            if not sel.any():
+                continue
+            err_k = np.linalg.norm(pred_val[sel] - Y_val[sel], axis=1)
+            nn_breakdown[str(k)] = {
+                "rmse": round(_rmse(err_k), 6),
+                "n":    int(sel.sum()),
+            }
+        metrics["nn_rmse_val_by_n_visible"] = nn_breakdown
+
     # UVDAR baseline metrics (if available — NaN rows are skipped)
     uvdar_baseline = artifacts.get("uvdar_baseline")
     if uvdar_baseline is not None:
@@ -348,7 +368,36 @@ def _compute_metrics(artifacts: dict) -> dict:
         metrics["improvement_pct_y"] = round(_improvement_pct(uvdar_rmse_axes["y"], nn_rmse_axes["y"]), 2)
         metrics["improvement_pct_z"] = round(_improvement_pct(uvdar_rmse_axes["z"], nn_rmse_axes["z"]), 2)
 
+        if n_vis_val is not None:
+            n_vis_val_u = n_vis_val[finite]
+            uvdar_breakdown: dict[str, dict] = {}
+            for k in sorted(np.unique(n_vis_val_u).astype(int).tolist()):
+                sel = n_vis_val_u == k
+                if not sel.any():
+                    continue
+                err_k = np.linalg.norm(uvdar_val[sel] - Y_val_u[sel], axis=1)
+                uvdar_breakdown[str(k)] = {
+                    "rmse": round(_rmse(err_k), 6),
+                    "n":    int(sel.sum()),
+                }
+            metrics["uvdar_rmse_val_by_n_visible"] = uvdar_breakdown
+
     return metrics
+
+
+def _extract_n_visible(
+    artifacts: dict,
+    feature_names: list[str] | None,
+    val_mask: np.ndarray,
+) -> np.ndarray | None:
+    """Return the per-validation-row ``n_visible`` count, or None."""
+    if not feature_names or "n_visible" not in feature_names:
+        return None
+    X_all = artifacts.get("X_all")
+    if X_all is None or X_all.shape[1] != len(feature_names):
+        return None
+    idx = feature_names.index("n_visible")
+    return np.rint(X_all[val_mask, idx]).astype(int)
 
 
 def _print_metrics(metrics: dict) -> None:
@@ -361,3 +410,16 @@ def _print_metrics(metrics: dict) -> None:
               f"(x={metrics['uvdar_rmse_val_x']:.4f}, y={metrics['uvdar_rmse_val_y']:.4f}, z={metrics['uvdar_rmse_val_z']:.4f})")
         print(f"  Improvement: {metrics['improvement_pct']:.2f}%  "
               f"(x={metrics['improvement_pct_x']:.2f}%, y={metrics['improvement_pct_y']:.2f}%, z={metrics['improvement_pct_z']:.2f}%)")
+
+    nn_by_n = metrics.get("nn_rmse_val_by_n_visible")
+    if nn_by_n:
+        uv_by_n = metrics.get("uvdar_rmse_val_by_n_visible", {})
+        print("  By n_visible:")
+        for k in sorted(nn_by_n, key=int):
+            nn_e = nn_by_n[k]
+            line = f"    {k} LEDs (n={nn_e['n']:>6}): NN={nn_e['rmse']:.4f} m"
+            if k in uv_by_n:
+                uv_e = uv_by_n[k]
+                imp = _improvement_pct(uv_e["rmse"], nn_e["rmse"])
+                line += f"  UVDAR={uv_e['rmse']:.4f} m  Δ={imp:+.2f}%"
+            print(line)

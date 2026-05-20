@@ -47,6 +47,7 @@ def main():
         in_dim=meta["in_dim"],
         t_all=t_ns,
         uvdar_baseline=uvdar_baseline,
+        feature_names=meta.get("feature_names"),
     )
 
     # Save

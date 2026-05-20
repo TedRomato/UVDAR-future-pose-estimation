@@ -8,6 +8,8 @@ docker run -it \
   -e DISPLAY=$DISPLAY \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   -v "$(pwd):/root" \
+  -v /etc/hosts:/etc/hosts:ro \
   ctumrs/mrs_uav_system:latest \
   bash --rcfile /root/.bashrc
+
 

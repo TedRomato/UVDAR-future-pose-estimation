@@ -23,6 +23,14 @@ from types import SimpleNamespace
 
 import matplotlib.pyplot as plt
 
+from clean_directory.dataset_layout import (
+    FLIER_ODOM,
+    FLIER_ODOM_IN_CAMERA_FRAME,
+    ORIGINAL_UVDAR_ESTIMATE,
+    USED_ROSBAGS,
+    UVDAR_ESTIMATE_IN_CAMERA_FRAME,
+)
+
 
 # ============================================================================
 # CSV loading
@@ -46,7 +54,7 @@ def load_pose_csv(path):
 
 def load_join_times(run_dir):
     """Read `Join times:` line from used_rosbags.txt as int nanoseconds."""
-    p = os.path.join(run_dir, "used_rosbags.txt")
+    p = os.path.join(run_dir, USED_ROSBAGS)
     if not os.path.exists(p):
         return []
     with open(p) as f:
@@ -149,11 +157,11 @@ def main():
 
     d = os.path.abspath(args.csv_dir)
     if args.relative:
-        truth_csv = "flier_odom_in_camera_frame.csv"
-        est_csv   = "uvdar_estimate_in_camera_frame.csv"
+        truth_csv = FLIER_ODOM_IN_CAMERA_FRAME
+        est_csv   = UVDAR_ESTIMATE_IN_CAMERA_FRAME
     else:
-        truth_csv = "flier_odom.csv"
-        est_csv   = "original_uvdar_estimate.csv"
+        truth_csv = FLIER_ODOM
+        est_csv   = ORIGINAL_UVDAR_ESTIMATE
     print(f"truth: {truth_csv}  est: {est_csv}")
     truth = load_pose_csv(os.path.join(d, truth_csv))
     est   = load_pose_csv(os.path.join(d, est_csv))

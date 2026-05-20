@@ -16,6 +16,7 @@ import torch
 import yaml
 
 from data.features import build_features
+from data.loaders import DATASET_LAYOUT, load_xyz
 from models.mlp import build_model
 
 
@@ -81,13 +82,43 @@ def load_run(
 
     # ── Build features (same pipeline as training) ────────────────────
     X_all, Y_all, t_all, feat_meta = build_features(cfg, str(run_dir))
-    uvdar_baseline = feat_meta.pop("uvdar_baseline", None)
+    feat_meta.pop("uvdar_baseline", None)  # we re-load it ourselves below
 
     # Filter NaN/inf (mirror training.py)
     ok = np.isfinite(X_all).all(axis=1) & np.isfinite(Y_all).all(axis=1)
     X_all, Y_all, t_all = X_all[ok], Y_all[ok], t_all[ok]
-    if uvdar_baseline is not None:
-        uvdar_baseline = uvdar_baseline[ok]
+
+    # ── Raw GT (full timeline, before feature-validity masking) ───────
+    # Loaded directly from the dataset CSV so we can show the true GT
+    # trajectory even at timestamps where features (and therefore NN
+    # predictions) are unavailable.
+    gt_csv = os.path.join(run_dir, DATASET_LAYOUT["flier_odom_in_camera_frame"])
+    if os.path.exists(gt_csv):
+        gt_df = load_xyz(gt_csv)
+        gt_raw_t_ns = gt_df["t_ns"].to_numpy(dtype=np.int64)
+        gt_raw_xyz  = gt_df[["x", "y", "z"]].to_numpy(dtype=np.float32)
+        print(f"[load_run] Raw GT: {len(gt_raw_t_ns)} samples from {gt_csv}")
+    else:
+        gt_raw_t_ns = np.empty(0, dtype=np.int64)
+        gt_raw_xyz  = np.empty((0, 3), dtype=np.float32)
+        print(f"[load_run] Raw GT: {gt_csv} not found")
+
+    # ── UVDAR baseline (always loaded, exact-match on t_all) ──────────
+    # No interpolation — just look up the row whose timestamp matches.
+    # Misses (no UVDAR sample at this blinker time) stay as NaN, so
+    # plotting / RMSE code can ignore them naturally.
+    uvdar_csv = os.path.join(run_dir, DATASET_LAYOUT["uvdar_estimate_in_camera_frame"])
+    if os.path.exists(uvdar_csv):
+        uvdar_df = (load_xyz(uvdar_csv)
+                    .drop_duplicates(subset="t_ns", keep="first")
+                    .set_index("t_ns"))
+        uvdar_baseline = (uvdar_df.reindex(t_all)[["x", "y", "z"]]
+                          .to_numpy(dtype=np.float32))
+        n_match = int(np.isfinite(uvdar_baseline).all(axis=1).sum())
+        print(f"[load_run] UVDAR baseline: {n_match}/{len(t_all)} exact matches")
+    else:
+        uvdar_baseline = np.full((len(t_all), 3), np.nan, dtype=np.float32)
+        print(f"[load_run] UVDAR baseline: {uvdar_csv} not found, using NaN")
 
     in_dim  = feat_meta["in_dim"]
     out_dim = Y_all.shape[1]
@@ -110,10 +141,10 @@ def load_run(
 
     # Residual learning: add UVDAR baseline back for final predictions
     if cfg.get("residual_learning", False):
-        if uvdar_baseline is None:
+        if not np.isfinite(uvdar_baseline).all():
             raise ValueError(
-                "Saved config has residual_learning=true but no UVDAR "
-                "baseline is available in the dataset."
+                "Saved config has residual_learning=true but the UVDAR "
+                "baseline has NaN rows — cannot add residual."
             )
         pred_res_all = pred_target + uvdar_baseline
     else:
@@ -121,19 +152,19 @@ def load_run(
 
     val_split = cfg.get("val_split", 0.2)
 
-    result = {
+    return {
         "cfg": cfg,
         "model": model,
         "Y_all": Y_all,
         "pred_res_all": pred_res_all,
+        "pred_rel_xyz_all": uvdar_baseline,   # always present, NaN where missing
         "t_all": t_all,
         "val_split": val_split,
         "run_dir": run_dir,
         "feature_names": feat_meta["feature_names"],
+        "gt_raw_t_ns": gt_raw_t_ns,
+        "gt_raw_xyz":  gt_raw_xyz,
     }
-    if uvdar_baseline is not None:
-        result["pred_rel_xyz_all"] = uvdar_baseline
-    return result
 
 
 # ── Label helper ──────────────────────────────────────────────────────

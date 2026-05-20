@@ -20,12 +20,19 @@ import os
 from types import SimpleNamespace
 
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
+
+from clean_directory.dataset_layout import FLIER_ODOM, OBSERVER_ODOM
+from plot_style import apply_style
+
+apply_style()
 
 
 NS_PER_S = 10**9
 DEFAULT_HZ = 3.0
-DEFAULT_CAMERA_DEG = 70.0
-
+DEFAULT_CAMERA_DEG = 74.0
+DEFAULT_FOV_DEG = 165.0
+FOV_LINE_LEN = 10
 
 def load_pose_csv(path):
     """Load t,x,y,qx,qy,qz,qw rows. Z is dropped."""
@@ -109,13 +116,21 @@ def main():
                          "X, in degrees. Left camera uses +deg, right uses "
                          "-deg.")
     ap.add_argument("--camera", choices=("left", "right", "both"),
-                    default="both",
-                    help="Which camera direction stub(s) to draw.")
+                    default="right",
+                    help="Which camera direction stub(s) to draw. Defaults "
+                         "to 'right' because the parsed dataset only "
+                         "contains right-camera blinkers (note: due to a "
+                         "recording naming bug, parts of the dataset used "
+                         "the physical left camera under the right topic, "
+                         "so 'left' and 'both' remain available).")
+    ap.add_argument("--fov-deg", type=float, default=DEFAULT_FOV_DEG,
+                    help="Full horizontal camera FOV in degrees, drawn as "
+                         "two dashed grey edge lines per camera.")
     args = ap.parse_args()
 
     d = os.path.abspath(args.csv_dir)
-    flier = load_pose_csv(os.path.join(d, "flier_odom.csv"))
-    obs   = load_pose_csv(os.path.join(d, "observer_odom.csv"))
+    flier = load_pose_csv(os.path.join(d, FLIER_ODOM))
+    obs   = load_pose_csv(os.path.join(d, OBSERVER_ODOM))
 
     t_lo_ns = int(parse_hhmm(args.start) * NS_PER_S)
     t_hi_ns = t_lo_ns + int(args.duration * NS_PER_S)
@@ -147,7 +162,7 @@ def main():
     fy = [p.y for p in flier_ds]
     ax.plot(fx, fy, color="tab:blue", linewidth=1.0,
             marker="o", markersize=2.5,
-            label=f"flier path ({args.hz:g} Hz)")
+            label=f"Flier trajectory")
 
     # Pick axis lengths from scene size.
     span = max(max(fx) - min(fx), max(fy) - min(fy),
@@ -169,24 +184,58 @@ def main():
         cams.append((+args.camera_deg, "tab:purple", "left camera"))
     if args.camera in ("right", "both"):
         cams.append((-args.camera_deg, "tab:orange", "right camera"))
+    half_fov = math.radians(args.fov_deg) / 2.0
+    
     for deg, color, name in cams:
         cam_yaw = obs_yaw + math.radians(deg)
-        ax.plot([obs_x, obs_x + cam_len * math.cos(cam_yaw)],
-                [obs_y, obs_y + cam_len * math.sin(cam_yaw)],
-                color=color, linewidth=2.0,
-                label=f"{name} ({deg:+.0f} deg from body X)")
+        ax.annotate(
+            "",
+            xy=(obs_x + cam_len * math.cos(cam_yaw),
+                obs_y + cam_len * math.sin(cam_yaw)),
+            xytext=(obs_x, obs_y),
+            arrowprops=dict(
+                arrowstyle="->",
+                color=color,
+                linewidth=2.0,
+                mutation_scale=15,
+            ),
+        )
+
+        ax.plot([], [], color=color, linewidth=2.0,
+                label="Observer camera heading")
+        for i, edge_yaw in enumerate((cam_yaw + half_fov,
+                                      cam_yaw - half_fov)):
+            ax.plot([obs_x, obs_x + FOV_LINE_LEN * math.cos(edge_yaw)],
+                    [obs_y, obs_y + FOV_LINE_LEN * math.sin(edge_yaw)],
+                    color="grey", linewidth=1.2, linestyle="--",
+                    label=(f"FOV edges"
+                           if i == 0 else None))
 
     # Single legend entries for axis colors.
-    ax.plot([], [], color="red",   linewidth=2.0, label="body / world X")
-    ax.plot([], [], color="green", linewidth=2.0, label="body / world Y")
+    ax.plot([], [], color="red",   linewidth=2.0, label="Body / World X")
+    ax.plot([], [], color="green", linewidth=2.0, label="Body / World Y")
 
     ax.set_aspect("equal", adjustable="datalim")
     ax.grid(True, alpha=0.3)
     ax.set_xlabel("X [m]")
     ax.set_ylabel("Y [m]")
     ax.legend(loc="best", fontsize="small")
-    ax.set_title(f"{os.path.basename(d)} — top view")
+    ax.set_title(f"Top-down view of a recording")
     fig.tight_layout()
+
+    def _save(event):
+        save_ax.set_visible(False)
+        fig.savefig("trajectory_top_view.pgf", bbox_inches="tight", pad_inches=0.02)
+        fig.savefig("trajectory_top_view.pdf", bbox_inches="tight", pad_inches=0.02)
+        fig.savefig("trajectory_top_view.svg", bbox_inches="tight", pad_inches=0.02)
+        save_ax.set_visible(True)
+        fig.canvas.draw_idle()
+        print("Saved trajectory_top_view.{pgf,pdf,svg}")
+
+    save_ax = fig.add_axes([0.82, 0.02, 0.12, 0.05])
+    save_button = Button(save_ax, "Save")
+    save_button.on_clicked(_save)
+
     plt.show()
 
 

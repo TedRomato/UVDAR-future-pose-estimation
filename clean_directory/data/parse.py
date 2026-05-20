@@ -26,7 +26,8 @@ except ImportError:
     sys.stderr.write("ERROR: source /opt/ros/<distro>/setup.bash first\n")
     sys.exit(2)
 
-from se3 import make_T, tf_msg_to_T, T_to_xyzquat
+from clean_directory.data.se3 import make_T, tf_msg_to_T, T_to_xyzquat
+from clean_directory.dataset_layout import LAYOUT as _LAYOUT
 
 
 # ============================================================================
@@ -424,7 +425,7 @@ def append_blinkers(path, blinkers, t_offset):
 
 
 def write_metadata(out_dir, bag_paths, join_times_ns, total_ns):
-    path = os.path.join(out_dir, "used_rosbags.txt")
+    path = os.path.join(out_dir, _LAYOUT["used_rosbags"])
     with open(path, "w") as f:
         for p in bag_paths:
             f.write(f"{os.path.abspath(p)}\n")
@@ -584,17 +585,8 @@ def main():
 
     print(f"Flight pairs: \n  " + "\n  ".join(f"{os.path.basename(o)}  {os.path.basename(f)}" for o, f in flight_inputs))
 
-    # CSV paths
-    csv_paths = {
-        "observer_odom_original":         os.path.join(out_dir, "observer_odom_original.csv"),
-        "observer_odom":                  os.path.join(out_dir, "observer_odom.csv"),
-        "flier_odom_original":            os.path.join(out_dir, "flier_odom_original.csv"),
-        "flier_odom":                     os.path.join(out_dir, "flier_odom.csv"),
-        "blinkers_right":                 os.path.join(out_dir, "blinkers_right.csv"),
-        "original_uvdar_estimate":        os.path.join(out_dir, "original_uvdar_estimate.csv"),
-        "uvdar_estimate_in_camera_frame": os.path.join(out_dir, "uvdar_estimate_in_camera_frame.csv"),
-        "flier_odom_in_camera_frame":     os.path.join(out_dir, "flier_odom_in_camera_frame.csv"),
-    }
+    # CSV paths (filenames come from clean_directory/dataset_layout.yaml)
+    csv_paths = {key: os.path.join(out_dir, fname) for key, fname in _LAYOUT.items()}
 
     timeline_end = 0  # ns
     join_times = []   # list of int ns
@@ -664,7 +656,7 @@ def main():
 
     if not args.no_plot:
         print("\nLaunching visualization ...")
-        import visualize_dataset
+        import clean_directory.data.visualize_dataset as visualize_dataset
         # visualizer takes --duration in seconds.
         sys.argv = ["visualize_dataset", out_dir,
                     "--duration", str(max(timeline_end / 1e9 + 1.0, 1.0))]

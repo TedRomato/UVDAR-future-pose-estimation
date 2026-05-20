@@ -16,18 +16,31 @@ import os
 import numpy as np
 import pandas as pd
 
-from data.loaders import load_xyz, load_blinkers, _parse_detections
+from data.loaders import DATASET_LAYOUT, load_xyz, load_blinkers, _parse_detections
 
 
 # ------------------------------------------------------------------ #
 #  Blinker preprocessing                                              #
 # ------------------------------------------------------------------ #
 
-def _blinker_feature_names(max_leds: int) -> list[str]:
-    """Return canonical feature names for the blinker vector."""
-    names = []
-    for i in range(1, max_leds + 1):
-        names.extend([f"u{i}", f"v{i}", f"m{i}"])
+def _blinker_feature_names(max_leds: int, encoding: str = "absolute") -> list[str]:
+    """Return canonical feature names for the blinker vector.
+
+    encoding == "absolute":
+        [u1, v1, m1, ..., uK, vK, mK, n_visible]
+    encoding == "centroid":
+        [c_u, c_v, du1, dv1, m1, ..., duK, dvK, mK, n_visible]
+    """
+    names: list[str] = []
+    if encoding == "centroid":
+        names.extend(["c_u", "c_v"])
+        for i in range(1, max_leds + 1):
+            names.extend([f"du{i}", f"dv{i}", f"m{i}"])
+    elif encoding == "absolute":
+        for i in range(1, max_leds + 1):
+            names.extend([f"u{i}", f"v{i}", f"m{i}"])
+    else:
+        raise ValueError(f"Unknown blinker encoding: {encoding!r}")
     names.append("n_visible")
     return names
 
@@ -36,6 +49,7 @@ def _preprocess_blinkers(
     df: pd.DataFrame,
     max_leds: int = 4,
     min_leds: int = 2,
+    encoding: str = "absolute",
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Convert a blinkers DataFrame into ``(features, t_ns)``.
@@ -49,13 +63,23 @@ def _preprocess_blinkers(
         Fixed number of LED slots in the feature vector.
     min_leds : int
         Rows with fewer visible LEDs are dropped.
+    encoding : {"absolute", "centroid"}
+        Per-row layout. See :func:`_blinker_feature_names`.
 
     Returns
     -------
-    features : np.ndarray, shape (M, max_leds*3 + 1)
+    features : np.ndarray, shape (M, in_dim)
+        ``in_dim = max_leds*3 + 1`` for ``absolute``,
+        ``in_dim = 2 + max_leds*3 + 1`` for ``centroid``.
     t_ns : np.ndarray of int64, shape (M,)
     """
-    input_dim = max_leds * 3 + 1
+    if encoding not in ("absolute", "centroid"):
+        raise ValueError(f"Unknown blinker encoding: {encoding!r}")
+
+    in_dim = max_leds * 3 + 1
+    if encoding == "centroid":
+        in_dim += 2  # c_u, c_v
+
     features_list: list[np.ndarray] = []
     t_list: list[int] = []
 
@@ -66,27 +90,53 @@ def _preprocess_blinkers(
         if len(uv_pairs) < min_leds:
             continue
 
-        uv_pairs.sort(key=lambda p: (p[0], p[1]))
-
         width = float(row["image_width"])
         height = float(row["image_height"])
         half_w, half_h = width / 2.0, height / 2.0
 
-        uv_norm = [
-            ((u - half_w) / half_w, (v - half_h) / half_h)
-            for u, v in uv_pairs
-        ]
+        uv_norm = np.asarray(
+            [((u - half_w) / half_w, (v - half_h) / half_h)
+             for u, v in uv_pairs],
+            dtype=np.float32,
+        )
 
-        n_visible = min(len(uv_norm), max_leds)
-        uv_used = uv_norm[:max_leds]
+        # Cap visible count at max_leds (extra detections are ignored;
+        # which ones are dropped is encoding-specific).
+        if encoding == "absolute":
+            # Sort by (u, v) and keep the first max_leds (legacy behaviour).
+            order = np.lexsort((uv_norm[:, 1], uv_norm[:, 0]))
+            uv_norm = uv_norm[order][:max_leds]
+            n_visible = uv_norm.shape[0]
 
-        vec = np.zeros(input_dim, dtype=np.float32)
-        for i, (un, vn) in enumerate(uv_used):
-            base = i * 3
-            vec[base] = un
-            vec[base + 1] = vn
-            vec[base + 2] = 1.0
-        vec[-1] = float(n_visible)
+            vec = np.zeros(in_dim, dtype=np.float32)
+            for i in range(n_visible):
+                base = i * 3
+                vec[base]     = uv_norm[i, 0]
+                vec[base + 1] = uv_norm[i, 1]
+                vec[base + 2] = 1.0
+            vec[-1] = float(n_visible)
+
+        else:  # "centroid"
+            # Centroid over ALL visible LEDs (not just the kept ones).
+            c_u, c_v = float(uv_norm[:, 0].mean()), float(uv_norm[:, 1].mean())
+            offsets = uv_norm - np.array([c_u, c_v], dtype=np.float32)
+
+            # Sort visible LEDs CCW by angle from +u axis, starting at 0.
+            angles = np.arctan2(offsets[:, 1], offsets[:, 0])
+            angles = np.where(angles < 0.0, angles + 2.0 * np.pi, angles)
+            order = np.argsort(angles, kind="stable")
+            offsets = offsets[order][:max_leds]
+            n_visible = offsets.shape[0]
+
+            vec = np.zeros(in_dim, dtype=np.float32)
+            vec[0] = c_u
+            vec[1] = c_v
+            for i in range(n_visible):
+                base = 2 + i * 3
+                vec[base]     = offsets[i, 0]
+                vec[base + 1] = offsets[i, 1]
+                vec[base + 2] = 1.0
+            vec[-1] = float(n_visible)
 
         features_list.append(vec)
         t_list.append(int(row["t_ns"]))
@@ -201,7 +251,7 @@ def build_features(
             "At least one of features.blinkers or features.uvdar must be enabled.")
 
     # --- Always load target ---
-    true_rel = load_xyz(os.path.join(run_dir, "true_relative_pose.csv"))
+    true_rel = load_xyz(os.path.join(run_dir, DATASET_LAYOUT["flier_odom_in_camera_frame"]))
 
     parts: list[tuple[np.ndarray, list[str]]] = []  # (array, names)
     ref_t: np.ndarray | None = None
@@ -210,18 +260,21 @@ def build_features(
     if use_blinkers:
         max_leds = int(blinkers_cfg.get("max_leds", 4))
         min_leds = int(blinkers_cfg.get("min_leds", 2))
+        encoding = str(blinkers_cfg.get("encoding", "absolute"))
 
-        blinker_df = load_blinkers(os.path.join(run_dir, "blinkers_right.csv"))
-        blinker_feats, blinker_t = _preprocess_blinkers(blinker_df, max_leds, min_leds)
+        blinker_df = load_blinkers(os.path.join(run_dir, DATASET_LAYOUT["blinkers_right"]))
+        blinker_feats, blinker_t = _preprocess_blinkers(
+            blinker_df, max_leds, min_leds, encoding,
+        )
 
         ref_t, blinker_feats = _deduplicate_t(blinker_t, blinker_feats)
-        parts.append((blinker_feats, _blinker_feature_names(max_leds)))
+        parts.append((blinker_feats, _blinker_feature_names(max_leds, encoding)))
 
-        print(f"[build_features] blinkers: {len(blinker_feats)} valid rows, "
-              f"{max_leds * 3 + 1}-D features")
+        print(f"[build_features] blinkers ({encoding}): {len(blinker_feats)} valid rows, "
+              f"{blinker_feats.shape[1]}-D features")
 
     # ── UVDAR (as input) ──────────────────────────────────────────────
-    pred_rel_csv = os.path.join(run_dir, "predicted_relative_pose.csv")
+    pred_rel_csv = os.path.join(run_dir, DATASET_LAYOUT["uvdar_estimate_in_camera_frame"])
     pred_rel = load_xyz(pred_rel_csv) if os.path.exists(pred_rel_csv) else None
 
     if use_uvdar:

@@ -46,10 +46,15 @@ The training scripts read CSVs from a `run_dir` produced by
 
 ```
 clean_directory/data/<run>/
-├── true_relative_pose.csv          # t, x, y, z [, qx, qy, qz, qw]
-├── predicted_relative_pose.csv     # t, x, y, z [, qx, qy, qz, qw]   (UVDAR baseline)
-└── blinkers_right.csv              # t, points, image_height, image_width
+├── flier_odom_in_camera_frame.csv      # t, x, y, z, qx, qy, qz, qw   (target)
+├── uvdar_estimate_in_camera_frame.csv  # t, x, y, z, qx, qy, qz, qw   (UVDAR baseline)
+└── blinkers_right.csv                  # t, points, image_height, image_width
 ```
+
+Filenames are **not** hard-coded in the loaders. They live in
+`clean_directory/dataset_layout.yaml` and are imported as
+`DATASET_LAYOUT` from `clean_directory.dataset_layout` (re-exported
+by `data/loaders.py`).
 
 All CSVs share a common nanosecond timestamp `t`.  Odometries are already
 interpolated to blinker timestamps and the UVDAR rows only exist where
@@ -117,15 +122,27 @@ CSV files  →  loaders.py  →  features.py (exact-join)  →  build_features()
 
 ## Feature construction (`build_features`)
 
-1. Load `true_relative_pose.csv` (target).
+1. Load `flier_odom_in_camera_frame.csv` (target).
 2. If `blinkers.enabled`: load `blinkers_right.csv`, parse the
-   `points` cell, sort detections lexicographically by `(u, v)`,
-   normalise pixel coordinates to `[-1, 1]`, pad/truncate to
-   `max_leds`, and append a binary mask + `n_visible` count.  The
-   blinker timestamps become the **reference timeline**.
-3. If `uvdar.enabled`: exact-join `predicted_relative_pose.csv` on the
-   reference timeline.  Rows where any UVDAR component is missing are
-   **dropped** from training.
+   `points` cell, normalise pixel coordinates to `[-1, 1]`,
+   pad/truncate to `max_leds`, and pack one of two encodings
+   (selected by `features.blinkers.encoding`):
+     - `absolute` (default, **3·K + 1 dims** where K = `max_leds`):
+       `[u_i, v_i, m_i, …, n_visible]` — per-LED normalised pixel
+       coordinates with a binary visibility mask. LEDs are sorted
+       lexicographically by `(u, v)`.
+     - `centroid` (**3·K + 3 dims**):
+       `[c_u, c_v, du_i, dv_i, m_i, …, n_visible]` — centroid is the
+       mean of visible normalised LEDs (= bearing of the target in the
+       image), per-LED `(du, dv)` are offsets from the centroid (=
+       shape / orientation / apparent size, implicit), and the mask
+       flags missing LEDs. Visible LEDs are sorted CCW by angle from
+       the +u axis starting at 0; missing slots are appended as
+       `(0, 0, 0)`.
+   The blinker timestamps become the **reference timeline**.
+3. If `uvdar.enabled`: exact-join `uvdar_estimate_in_camera_frame.csv`
+   on the reference timeline.  Rows where any UVDAR component is
+   missing are **dropped** from training.
 4. Always exact-join the target on the surviving timeline; drop any
    row without a target.
 5. Always try to load the UVDAR `position` baseline for metrics

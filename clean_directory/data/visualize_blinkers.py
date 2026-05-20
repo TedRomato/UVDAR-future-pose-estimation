@@ -20,6 +20,8 @@ from types import SimpleNamespace
 
 import matplotlib.pyplot as plt
 
+from clean_directory.dataset_layout import BLINKERS_RIGHT, USED_ROSBAGS
+
 
 NS_PER_S = 10**9
 
@@ -93,7 +95,7 @@ def parse_hhmm(text):
 
 
 def load_join_times(run_dir):
-    p = os.path.join(run_dir, "used_rosbags.txt")
+    p = os.path.join(run_dir, USED_ROSBAGS)
     if not os.path.exists(p):
         return []
     with open(p) as f:
@@ -110,7 +112,7 @@ def load_join_times(run_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("csv_dir")
-    ap.add_argument("--file", default="blinkers_right.csv",
+    ap.add_argument("--file", default=BLINKERS_RIGHT,
                     help="Blinker CSV filename inside csv_dir.")
     ap.add_argument("--start", default="0:00", metavar="HH:MM")
     ap.add_argument("--duration", type=float, default=3600.0, metavar="SEC")

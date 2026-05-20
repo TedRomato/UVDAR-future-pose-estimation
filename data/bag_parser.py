@@ -306,10 +306,38 @@ def get_transform_components(bag_path, uav_id=1, T_fixed_local=None):
             stamp = tf_msg.header.stamp.to_sec()
             dynamic_fcu_fixed.append((stamp, _tf_msg_to_se3(tf_msg)))
 
+    # Reverse-direction fallback: some bags publish fixed_origin -> fcu instead.
+    dynamic_reversed = []
+    for tf_msg in tf_dynamic:
+        fid = tf_msg.header.frame_id.lstrip("/")
+        cid = tf_msg.child_frame_id.lstrip("/")
+        if fid == FRAME_FIXED and cid == FRAME_FCU:
+            stamp = tf_msg.header.stamp.to_sec()
+            dynamic_reversed.append((stamp, np.linalg.inv(_tf_msg_to_se3(tf_msg))))
+
+    if dynamic_fcu_fixed and dynamic_reversed:
+        print(f"  Warning: both directions of dynamic TF present "
+              f"({FRAME_FCU}->{FRAME_FIXED}: {len(dynamic_fcu_fixed)}, "
+              f"reverse: {len(dynamic_reversed)}); using forward only.")
+    elif dynamic_reversed and not dynamic_fcu_fixed:
+        print(f"  Note: dynamic TF published as {FRAME_FIXED} -> {FRAME_FCU}; inverting.")
+        dynamic_fcu_fixed = dynamic_reversed
+
     if not dynamic_fcu_fixed:
-        raise RuntimeError(f"No dynamic TF {FRAME_FCU} → {FRAME_FIXED} in /tf")
+        raise RuntimeError(
+            f"No dynamic TF {FRAME_FCU} <-> {FRAME_FIXED} in /tf (neither direction)")
 
     dynamic_fcu_fixed.sort(key=lambda x: x[0])
+
+    # Sanity: thin / brief TF stream is suspicious.
+    if len(dynamic_fcu_fixed) < 10:
+        print(f"  Warning: only {len(dynamic_fcu_fixed)} dynamic TF entries for "
+              f"{FRAME_FCU} <-> {FRAME_FIXED}")
+    else:
+        span = dynamic_fcu_fixed[-1][0] - dynamic_fcu_fixed[0][0]
+        if span < 1.0:
+            print(f"  Warning: dynamic TF stream spans only {span:.3f}s")
+
     return T_fixed_local, dynamic_fcu_fixed
 
 

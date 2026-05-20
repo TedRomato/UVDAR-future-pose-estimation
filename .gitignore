@@ -10,3 +10,12 @@ notes.txt
 env
 neural_networks/current_pose_estimation/results/
 __pycache__
+mrs_docker-lazy/
+clean_directory/data/*/
+*.pdf
+*.pgf
+*.svg
+*.png
+mrs_docker-lazy/
+clean_directory/nn/results/
+clean_directory/nn/various_experiments/
